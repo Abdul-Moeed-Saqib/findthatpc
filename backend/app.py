@@ -29,7 +29,7 @@ def scrape():
     total_parts_price = sum([part['price'] for part in parts])
     difference = prebuilt_price - total_parts_price
 
-    insert_comparison(url, prebuilt_price, total_parts_price, difference, parts) # Saves it to the database
+    #insert_comparison(url, prebuilt_price, total_parts_price, difference, parts) Saves it to the database
 
     return jsonify({
         "prebuilt_name": prebuilt_name,
