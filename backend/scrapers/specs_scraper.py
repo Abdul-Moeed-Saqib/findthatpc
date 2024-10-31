@@ -238,10 +238,9 @@ def search_part_price(part_name, component_type=None):
                 if product_title_element:
                     product_title = product_title_element.text.lower()
                     
-                    # Ensure title contains required features
+                    # verification
                     matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:  # 50% feature match requirement
-                        # AI cross-verification to confirm it’s a component (not a prebuilt PC)
+                    if matches >= len(part_features) // 2:  
                         if verify_part_match(part_name, product_title, component_type): 
                             price_element = product.find('li', class_='price-current')
                             if price_element:
