@@ -8,7 +8,7 @@ const Home = () => {
     return (
         <VStack spacing={6} mt={10} textAlign="center">
             <Box>
-                <Text fontSize="2xl" fontWeight="bold">Welcome to FindThatPC.AI</Text>
+                <Text fontSize="xxx-large" fontWeight="bold">Welcome to FindThatPC.AI</Text>
                 <Text fontSize="lg" mt={4}>
                     FindThatPC.AI compares the prices of prebuilt PCs against individual components.
                 </Text>

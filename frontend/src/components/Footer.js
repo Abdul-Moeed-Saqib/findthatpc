@@ -13,8 +13,9 @@ function Footer() {
             borderColor="lightblue"
             p={4}
             textAlign="center"
+            zIndex="10"
         >
-            <Text color="lightblue">© 2024 FindThatPC.AI. All rights reserved.</Text>
+            <Text color="lightblue">© 2024 SQ Corp. All rights reserved.</Text>
         </Box>
     );
 }

@@ -40,7 +40,7 @@ def check_if_prebuilt_pc(html_content):
     }
     
     data = {
-        "model": "llama-3.1-8b-instant",
+        "model": "llama3-70b-8192",
         "messages": [
             {"role": "system", "content": "You are an AI that determines if a webpage HTML describes a prebuilt gaming desktop PC."},
             {"role": "user", "content": (
@@ -170,7 +170,7 @@ def clean_up_response(raw_response):
     }
 
     refined_prompt = {
-        "model": "llama-3.1-8b-instant",
+        "model": "mixtral-8x7b-32768",
         "messages": [
             {"role": "system", "content": "You are an AI that cleans and standardizes component details, ensuring all major parts are included if present."},
             {"role": "user", "content": (
@@ -221,7 +221,7 @@ def extract_features(part_name):
 
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None):
-    search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
+    search_url = f"https://www.newegg.ca/p/pl?d={component_type.replace(' ', '+')}"
     headers = {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
     }
@@ -266,7 +266,7 @@ def verify_part_match(part_name, product_title, component_type=None):
         'https://api.groq.com/openai/v1/chat/completions',
         headers={'Authorization': f'Bearer {os.getenv("GROQ_API_KEY")}', 'Content-Type': 'application/json'},
         json={
-            "model": "llama-3.1-8b-instant",
+            "model": "llama3-70b-8192",
             "messages": [
                 {"role": "system", "content": "You accurately classify components as standalone or prebuilt systems."},
                 {"role": "user", "content": ai_prompt}

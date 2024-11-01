@@ -1,16 +1,19 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-    Box, Button, Input, Spinner, VStack, Text, HStack, Link as ChakraLink, Grid,
+    Box, Button, Input, Spinner, VStack, Text, HStack, Link as ChakraLink, Grid, ScaleFade, Fade
 } from '@chakra-ui/react';
 
 const Comparison = () => {
     const [url, setURL] = useState('');
     const [loading, setLoading] = useState(false);
     const [comparisonData, setComparisonData] = useState(null);
+    const [visibleParts, setVisibleParts] = useState([]);
 
     const handleStartComparison = async () => {
         setLoading(true);
+        setComparisonData(null);
+        setVisibleParts([]);
         try {
             const response = await axios.post('/scrape', { url: url.trim() });
             setComparisonData(response.data);
@@ -21,24 +24,51 @@ const Comparison = () => {
         }
     };
 
+    useEffect(() => {
+        if (comparisonData) {
+            comparisonData.parts.forEach((_, index) => {
+                setTimeout(() => {
+                    setVisibleParts(prev => [...prev, index]);
+                }, index * 200); 
+            });
+        }
+    }, [comparisonData]);
+
     return (
-        <VStack spacing={6} mt={10} align="stretch">
+        <VStack spacing={6} mt={10} align="stretch" maxWidth="1200px" mx="auto">
             {!comparisonData && (
                 <>
+                    <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
+                        <Text fontSize="lg" fontWeight="medium">
+                            Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself. 
+                            Simply enter a link to a prebuilt PC from Newegg or Canada Computers, and we’ll break down the prices for each individual component. 
+                            Our app helps you decide if buying a prebuilt is worth it or if building from parts is a more budget-friendly option.
+                        </Text>
+                        <Text fontSize="lg" mt={2}>
+                            Note: Please use only product links from Newegg or Canada Computers. Example URLs:
+                        </Text>
+                        <Text fontSize="sm" color="gray.500" mt={1}>
+                            - https://www.newegg.com/productpage
+                        </Text>
+                        <Text fontSize="sm" color="gray.500">
+                            - https://www.canadacomputers.com/productpage
+                        </Text>
+                    </Box>
+
                     <Input
                         placeholder="Enter prebuilt PC link"
                         value={url}
                         onChange={(e) => setURL(e.target.value)}
                         size="lg"
-                        maxWidth="500px" 
-                        mx="auto" 
+                        maxWidth="500px"
+                        mx="auto"
                     />
                     <Button
                         colorScheme="blue"
                         onClick={handleStartComparison}
-                        isDisabled={!url.trim() || loading === true}
-                        maxWidth="200px" 
-                        mx="auto" 
+                        isDisabled={!url.trim() || loading}
+                        maxWidth="200px"
+                        mx="auto"
                     >
                         Start Comparison
                     </Button>
@@ -52,32 +82,62 @@ const Comparison = () => {
             )}
 
             {comparisonData && (
-                <HStack align="start" spacing={10} mt={10} w="100%">
-                    <VStack align="start" w="30%" spacing={5}>
-                        <Box p={5} shadow="md" borderWidth="1px" borderRadius="lg" bg="gray.50">
-                            <Text fontSize="xl" fontWeight="bold">Prebuilt PC Information</Text>
-                            <Text mt={2}><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
-                            <Text><strong>Price:</strong> ${comparisonData.prebuilt_price.toFixed(2)}</Text>
-                        </Box>
-                        <Box p={5} shadow="md" borderWidth="1px" borderRadius="lg" bg="gray.50">
-                            <Text fontSize="xl" fontWeight="bold">Price Difference</Text>
-                            <Text mt={2}><strong>Total Parts Price:</strong> ${comparisonData.total_parts_price.toFixed(2)}</Text>
-                            <Text><strong>Difference:</strong> ${comparisonData.price_difference.toFixed(2)}</Text>
-                        </Box>
-                    </VStack>
+                <HStack align="start" spacing={8} mt={10} w="100%" alignItems="flex-start">
+                    <Fade in={!!comparisonData}>
+                        <VStack
+                            align="start"
+                            spacing={5}
+                            w="30%"
+                            position="absolute"
+                            top="130px"
+                            left="20px"
+                        >
+                            <Box p={6} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="100%">
+                                <Text fontSize="xx-large" fontWeight="bold" color="blue.600">Prebuilt PC Information</Text>
+                                <Text mt={4} fontSize="x-large"><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
+                                <Text fontSize="x-large"><strong>Price:</strong> ${comparisonData.prebuilt_price.toFixed(2)}</Text>
+                            </Box>
+                            <Box p={6} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="100%">
+                                <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
+                                <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> ${comparisonData.total_parts_price.toFixed(2)}</Text>
+                                <Text fontSize="x-large"><strong>Difference:</strong> ${comparisonData.price_difference.toFixed(2)}</Text>
+                            </Box>
+                        </VStack>
+                    </Fade>
 
-                    <Box w="70%">
-                        <Text fontSize="xl" fontWeight="bold" mb={4}>Components</Text>
-                        <Grid templateColumns="repeat(auto-fit, minmax(250px, 1fr))" gap={4}>
+                    <Box w="100%" pl="350px">
+                        <Box w="135%" textAlign="center" mb={6}>
+                            <Text fontSize="xx-large" fontWeight="bold" color="gray.700" textAlign="center">
+                                Components
+                            </Text>
+                        </Box>
+                        <Grid templateColumns="repeat(3, 1fr)" gap={10}>
                             {comparisonData.parts.map((part, index) => (
-                                <Box key={index} p={5} shadow="md" borderWidth="1px" borderRadius="lg" bg="white">
-                                    <Text fontSize="lg" fontWeight="bold">{part.name}</Text>
-                                    <Text><strong>Type:</strong> {part.type}</Text>
-                                    <Text><strong>Price:</strong> ${part.price.toFixed(2)}</Text>
-                                    <Button as={ChakraLink} href={part.link} target="_blank" colorScheme="blue" mt={3}>
-                                        View Part
-                                    </Button>
-                                </Box>
+                                <ScaleFade in={visibleParts.includes(index)} initialScale={0.9} key={index}>
+                                    <Box 
+                                        p={6} 
+                                        shadow="lg" 
+                                        borderWidth="2px" 
+                                        borderRadius="lg" 
+                                        bg="white" 
+                                        h="250px" 
+                                        w="300px" 
+                                        display="flex" 
+                                        flexDirection="column" 
+                                        justifyContent="space-between"
+                                    >
+                                        <Box>
+                                            <Text fontSize="lg" fontWeight="bold" color="teal.600">{part.name}</Text>
+                                            <Text><strong>Type:</strong> {part.type}</Text>
+                                            <Text><strong>Price:</strong> ${part.price.toFixed(2)}</Text>
+                                        </Box>
+                                        <Box display="flex" justifyContent="center" mt={4}>
+                                            <Button as={ChakraLink} href={part.link} target="_blank" colorScheme="blue">
+                                                View Part
+                                            </Button>
+                                        </Box>
+                                    </Box>
+                                </ScaleFade>
                             ))}
                         </Grid>
                     </Box>
