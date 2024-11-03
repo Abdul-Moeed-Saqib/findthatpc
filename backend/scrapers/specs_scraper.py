@@ -11,36 +11,32 @@ def get_html_content(url):
     accepted_domains = ["newegg.ca", "newegg.com", "canadacomputers.com", "bestbuy.ca"]
     
     if not any(domain in url for domain in accepted_domains):
-        print("Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed.")
-        return None
+        return None, "Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed."
     
     try:
         response = requests.get(url)
         if response.status_code != 200:
-            print(f"Failed to fetch page content. Status code: {response.status_code}")
-            return None
+            return None, f"Failed to fetch page content. Status code: {response.status_code}"
         
         html_content = response.content
     except requests.exceptions.RequestException as e:
-        print(f"Error fetching page content: {e}")
-        return None
+        return None, f"Error fetching page content: {e}"
     
     is_prebuilt_pc = check_if_prebuilt_pc(html_content)
     if not is_prebuilt_pc:
-        print("The URL does not appear to be a gaming desktop or prebuilt PC. Only prebuilt PCs are allowed.")
-        return None
+        return None, "The URL does not appear to be a gaming desktop or prebuilt PC. Only prebuilt PCs are allowed."
     
-    return html_content
+    return html_content, None
 
 def check_if_prebuilt_pc(html_content):
-    groq_api_key = os.getenv('GROQ_API_KEY')
+    openai_api_key = os.getenv('OPENAI_API_KEY')
     headers = {
-        'Authorization': f'Bearer {groq_api_key}',
+        'Authorization': f'Bearer {openai_api_key}',
         'Content-Type': 'application/json'
     }
     
     data = {
-        "model": "llama3-70b-8192",
+        "model": "gpt-4o-mini",
         "messages": [
             {"role": "system", "content": "You are an AI that determines if a webpage HTML describes a prebuilt gaming desktop PC."},
             {"role": "user", "content": (
@@ -52,7 +48,7 @@ def check_if_prebuilt_pc(html_content):
     }
     
     try:
-        response = requests.post('https://api.groq.com/openai/v1/chat/completions', headers=headers, json=data)
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
         if response.status_code == 200:
             result = response.json()
             classification = result['choices'][0]['message']['content'].strip().lower()
@@ -123,86 +119,53 @@ def extract_relevant_html(html_content):
 
 # This function requests to an AI from GroqCloud to find the parts of the prebuilt pc
 def scrape_specs_from_html(cleaned_html_content):
-    groq_api_key = os.getenv('GROQ_API_KEY')
+    openai_api_key = os.getenv('OPENAI_API_KEY')
     headers = {
-        'Authorization': f'Bearer {groq_api_key}',  
+        'Authorization': f'Bearer {openai_api_key}',
         'Content-Type': 'application/json'
     }
 
     data = {
-        "model": "llama-3.1-8b-instant",
+        "model": "gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You are an AI that extracts computer parts, their names, types, and the prebuilt PC name from HTML."},
+            {"role": "system", "content": (
+                "You are an AI that extracts and cleans computer parts from HTML. "
+                "Remove unnecessary details like percentage values or descriptors unrelated to core component specs."
+            )},
             {"role": "user", "content": (
-                "Extract **all unique components**, including CPU, GPU, RAM, Storage, Cooling, Motherboard, Power Supply, Case, and the **prebuilt PC name** from this HTML content. "
-                "Ensure each component is listed once with no duplicates. If a component is missing in the HTML, skip it rather than guessing. Format as follows:\n\n"
+                "Extract all unique components, including CPU, GPU, RAM, Storage, Cooling, Motherboard, Power Supply, Case, "
+                "and the prebuilt PC name from this HTML content. "
+                "Ensure each component is listed once without duplicates. "
+                "If a component is missing, skip it rather than guessing. "
+                "Format as follows:\n\n"
                 "Prebuilt Name: [Prebuilt PC Name]\n"
                 "CPU: [Component]\n"
                 "GPU: [Component]\n"
                 "Cooling: [Component]\n\n"
                 f"Here is the HTML: {cleaned_html_content}"
+            )},
+            {"role": "assistant", "content": (
+                "Please ensure each component name is essential and remove extraneous information, "
+                "like wattage ratings beyond the primary value (e.g., '500W' rather than '500W 85%'), "
+                "and extra terms like 'RGB' or 'Cooling' unless essential to the component's identity."
             )}
         ]
     }
 
-    response = requests.post('https://api.groq.com/openai/v1/chat/completions', headers=headers, json=data)
+    response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
 
     if response.status_code == 200:
         try:
             result = response.json()
             parts_text = result['choices'][0]['message']['content']
-            cleaned_parts_text = clean_up_response(parts_text)
-            return cleaned_parts_text
+            return parts_text
 
         except (ValueError, KeyError):
-            print("Error processing Groq response.")
+            print("Error processing OpenAI response.")
             return None
     else:
-        print(f"Failed to fetch data from Groq API. Status code: {response.status_code}")
+        print(f"Failed to fetch data from OpenAI API. Status code: {response.status_code}")
         return None
-
-# This function is to clean up and verify the AI response
-def clean_up_response(raw_response):
-    groq_api_key = os.getenv('GROQ_API_KEY')
-    headers = {
-        'Authorization': f'Bearer {groq_api_key}',  
-        'Content-Type': 'application/json'
-    }
-
-    refined_prompt = {
-        "model": "mixtral-8x7b-32768",
-        "messages": [
-            {"role": "system", "content": "You are an AI that cleans and standardizes component details, ensuring all major parts are included if present."},
-            {"role": "user", "content": (
-                "Given the following extracted data, include only the prebuilt name and components. Make sure that if each major component, like Cooling or Power Supply, appears in the raw data, it is listed once without duplicates or omissions.\n\n"
-                "Format as shown:\n\n"
-                "Prebuilt Name: [Prebuilt Name]\n"
-                "CPU: [Component]\n"
-                "GPU: [Component]\n"
-                "Storage: [Component]\n"
-                "Cooling: [Component]\n\n"
-                f"Here is the extracted data: {raw_response}"
-            )}
-        ]
-    }
-
-    response = requests.post('https://api.groq.com/openai/v1/chat/completions', headers=headers, json=refined_prompt)
-
-    if response.status_code == 200:
-        try:
-            refined_content = response.json()['choices'][0]['message']['content']
-            mandatory_components = ["CPU", "GPU", "Storage", "Cooling"]
-            for component in mandatory_components:
-                if component not in refined_content:
-                    refined_content += f"\n{component}: [Not Listed]"
-            return refined_content.strip()
-
-        except (ValueError, KeyError):
-            print("Error processing Groq response. Returning raw data.")
-            return raw_response  
-    else:
-        print("Error in post-processing AI refinement. Returning raw data.")
-        return raw_response
     
 # This function extract features of the component and it can be for any component.
 def extract_features(part_name):
@@ -258,26 +221,32 @@ def search_part_price(part_name, component_type=None):
 
 # This function verify if product matches with the component using AI
 def verify_part_match(part_name, product_title, component_type=None):
-    ai_prompt = (f"Does '{product_title}' accurately describe a standalone '{component_type or part_name}' "
-                 "and NOT a prebuilt PC, Gaming Desktop, Laptop, or System? Respond 'yes' only if it is definitely a standalone component, "
-                 "not a system, prebuilt, or anything unrelated to standalone parts. Reply 'no' otherwise.")
+    openai_api_key = os.getenv('OPENAI_API_KEY')
+    headers = {
+        'Authorization': f'Bearer {openai_api_key}',  
+        'Content-Type': 'application/json'
+    }
     
-    response = requests.post(
-        'https://api.groq.com/openai/v1/chat/completions',
-        headers={'Authorization': f'Bearer {os.getenv("GROQ_API_KEY")}', 'Content-Type': 'application/json'},
-        json={
-            "model": "llama3-70b-8192",
-            "messages": [
-                {"role": "system", "content": "You accurately classify components as standalone or prebuilt systems."},
-                {"role": "user", "content": ai_prompt}
-            ]
-        }
-    )
+    data = {
+        "model": "gpt-4o-mini",
+        "messages": [
+            {"role": "system", "content": "You accurately classify components as standalone or prebuilt systems."},
+            {"role": "user", "content": (
+                f"Does '{product_title}' accurately describe a standalone '{component_type or part_name}' "
+                "and NOT a prebuilt PC, Gaming Desktop, Laptop, System, or unrelated item? Respond 'yes' only if it is definitely a standalone component, "
+                "not a system, prebuilt, or anything unrelated to standalone parts. Reply 'no' otherwise."
+            )}
+        ]
+    }
+    
+    response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
     
     if response.status_code == 200:
         ai_response = response.json()['choices'][0]['message']['content']
         return "yes" in ai_response.lower()
-    return False
+    else:
+        print("Error verifying part match with OpenAI.")
+        return False
     
 
 # This function parses the parts with the prices from the AI response

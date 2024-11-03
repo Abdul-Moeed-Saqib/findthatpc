@@ -1,24 +1,34 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-    Box, Button, Input, Spinner, VStack, Text, HStack, Link as ChakraLink, Grid, ScaleFade, Fade
+    Box, Button, Input, Spinner, VStack, Text, HStack, Link as ChakraLink, Grid, ScaleFade, Fade, useToast
 } from '@chakra-ui/react';
 
 const Comparison = () => {
+    const toast = useToast();
     const [url, setURL] = useState('');
     const [loading, setLoading] = useState(false);
     const [comparisonData, setComparisonData] = useState(null);
     const [visibleParts, setVisibleParts] = useState([]);
+    const [allComponentsDisplayed, setAllComponentsDisplayed] = useState(false);
 
     const handleStartComparison = async () => {
         setLoading(true);
         setComparisonData(null);
         setVisibleParts([]);
+        setAllComponentsDisplayed(false);
         try {
             const response = await axios.post('/scrape', { url: url.trim() });
             setComparisonData(response.data);
         } catch (error) {
             console.error("Error fetching data:", error);
+            toast({
+                title: "Error",
+                description: error.response?.data?.error || "An unexpected error occurred.",
+                status: "error",
+                duration: 5000,
+                isClosable: true,
+            });
         } finally {
             setLoading(false);
         }
@@ -26,11 +36,18 @@ const Comparison = () => {
 
     useEffect(() => {
         if (comparisonData) {
-            comparisonData.parts.forEach((_, index) => {
-                setTimeout(() => {
-                    setVisibleParts(prev => [...prev, index]);
-                }, index * 200); 
-            });
+            const displayComponents = async () => {
+                comparisonData.parts.forEach((_, index) => {
+                    setTimeout(() => {
+                        setVisibleParts(prev => [...prev, index]);
+                        if (index === comparisonData.parts.length - 1) {
+                            setAllComponentsDisplayed(true);
+                        }
+                    }, index * 200);
+                });
+            };
+            displayComponents();
+            setURL("");
         }
     }, [comparisonData]);
 
@@ -40,8 +57,8 @@ const Comparison = () => {
                 <>
                     <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
                         <Text fontSize="lg" fontWeight="medium">
-                            Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself. 
-                            Simply enter a link to a prebuilt PC from Newegg or Canada Computers, and we’ll break down the prices for each individual component. 
+                            Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself.
+                            Simply enter a link to a prebuilt PC from Newegg or Canada Computers, and we’ll break down the prices for each individual component.
                             Our app helps you decide if buying a prebuilt is worth it or if building from parts is a more budget-friendly option.
                         </Text>
                         <Text fontSize="lg" mt={2}>
@@ -83,28 +100,40 @@ const Comparison = () => {
 
             {comparisonData && (
                 <HStack align="start" spacing={8} mt={10} w="100%" alignItems="flex-start">
-                    <Fade in={!!comparisonData}>
-                        <VStack
-                            align="start"
-                            spacing={5}
-                            w="30%"
-                            position="absolute"
-                            top="130px"
-                            left="20px"
-                        >
-                            <Box p={6} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="100%">
+                    <VStack
+                        align="start"
+                        spacing={5}
+                        w="30%"
+                        position="absolute"
+                        top="130px"
+                        left="20px"
+                    >
+                        <Fade in={!!comparisonData}>
+                            <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="blue.600">Prebuilt PC Information</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
                                 <Text fontSize="x-large"><strong>Price:</strong> ${comparisonData.prebuilt_price.toFixed(2)}</Text>
-                            </Box>
-                            <Box p={6} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="100%">
+                             </Box>
+                            <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> ${comparisonData.total_parts_price.toFixed(2)}</Text>
                                 <Text fontSize="x-large"><strong>Difference:</strong> ${comparisonData.price_difference.toFixed(2)}</Text>
                             </Box>
-                        </VStack>
-                    </Fade>
-
+                        </Fade>
+                        {allComponentsDisplayed && (
+                        <Fade in={allComponentsDisplayed}>
+                            <Box p={10} mt={150} textAlign="center">
+                                <Text fontSize="x-large" fontWeight="bold" color="purple.600">
+                                    Want to try another prebuilt PC?
+                                </Text>
+                                <Button mt={4} colorScheme="purple" onClick={() => setComparisonData(null)}>
+                                    Compare Another PC
+                                </Button>
+                            </Box>
+                        </Fade>
+                    )}
+                    </VStack>
+                    
                     <Box w="100%" pl="350px">
                         <Box w="135%" textAlign="center" mb={6}>
                             <Text fontSize="xx-large" fontWeight="bold" color="gray.700" textAlign="center">
@@ -127,7 +156,7 @@ const Comparison = () => {
                                         justifyContent="space-between"
                                     >
                                         <Box>
-                                            <Text fontSize="lg" fontWeight="bold" color="teal.600">{part.name}</Text>
+                                            <Text fontSize="xl" fontWeight="semibold" color="teal.600">{part.name}</Text>
                                             <Text><strong>Type:</strong> {part.type}</Text>
                                             <Text><strong>Price:</strong> ${part.price.toFixed(2)}</Text>
                                         </Box>

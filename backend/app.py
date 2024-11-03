@@ -12,9 +12,9 @@ def scrape():
     if not url:
         return jsonify({"error": "URL is required"}), 400
 
-    html_content = get_html_content(url)
-    if not html_content:
-        return jsonify({"error": "Failed to fetch HTML content"}), 400
+    html_content, error = get_html_content(url)
+    if error:
+        return jsonify({"error": error}), 400
 
     prebuilt_price, cleaned_html_content = extract_relevant_html(html_content)
 

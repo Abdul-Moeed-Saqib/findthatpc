@@ -10,7 +10,7 @@ function App() {
     return (
         <Router>
             <Header />
-            <Container maxW="container.lg" centerContent py={6}>
+            <Container maxW="container.lg" centerContent flex={1} py={6} pb="100px">
                 <Box w="100%">
                     <Routes>
                         <Route path="/" element={<Home />} />
