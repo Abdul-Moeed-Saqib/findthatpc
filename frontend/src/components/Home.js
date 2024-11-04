@@ -7,7 +7,16 @@ const Home = () => {
 
     return (
         <VStack spacing={6} mt={10} textAlign="center">
-            <Box>
+            <Box
+                bg="white"
+                borderRadius="lg"
+                boxShadow="lg"
+                p={12} 
+                maxW="6xl" 
+                w="full"
+                border="1px"
+                borderColor="gray.200"
+            >
                 <Text fontSize="xxx-large" fontWeight="bold">Welcome to FindThatPC.AI</Text>
                 <Text fontSize="lg" mt={4}>
                     FindThatPC.AI compares the prices of prebuilt PCs against individual components.
@@ -16,7 +25,7 @@ const Home = () => {
                     We support only <strong>Newegg</strong> and <strong>CanadaComputers</strong> links.
                 </Text>
             </Box>
-            <Button colorScheme="blue" onClick={() => navigate('/comparison')}>
+            <Button colorScheme="blue" size={"lg"} onClick={() => navigate('/comparison')}>
                 Continue
             </Button>
         </VStack>

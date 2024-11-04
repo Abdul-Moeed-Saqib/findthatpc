@@ -1,11 +1,13 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
 import {
-    Box, Button, Input, Spinner, VStack, Text, HStack, Link as ChakraLink, Grid, ScaleFade, Fade, useToast
+    Box, Button, Input, Spinner, VStack, Text, HStack, Fade, useToast
 } from '@chakra-ui/react';
+import Components from './Components';
 
 const Comparison = () => {
     const toast = useToast();
+    
     const [url, setURL] = useState('');
     const [loading, setLoading] = useState(false);
     const [comparisonData, setComparisonData] = useState(null);
@@ -18,7 +20,7 @@ const Comparison = () => {
         setVisibleParts([]);
         setAllComponentsDisplayed(false);
         try {
-            const response = await axios.post('/scrape', { url: url.trim() });
+            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/scrape`, { url: url.trim() });
             setComparisonData(response.data);
         } catch (error) {
             console.error("Error fetching data:", error);
@@ -82,6 +84,7 @@ const Comparison = () => {
                     />
                     <Button
                         colorScheme="blue"
+                        size={"lg"}
                         onClick={handleStartComparison}
                         isDisabled={!url.trim() || loading}
                         maxWidth="200px"
@@ -117,12 +120,18 @@ const Comparison = () => {
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> ${comparisonData.total_parts_price.toFixed(2)}</Text>
-                                <Text fontSize="x-large"><strong>Difference:</strong> ${comparisonData.price_difference.toFixed(2)}</Text>
+                                <Text fontSize="x-large" color={comparisonData.price_difference < 0 ? 'red' : 'black'}>
+                                    <strong>Difference:</strong> 
+                                    {comparisonData.price_difference < 0 
+                                        ? ` -$${Math.abs(comparisonData.price_difference).toFixed(2)}`
+                                        : `$${comparisonData.price_difference.toFixed(2)}`
+                                    }
+                                </Text>
                             </Box>
                         </Fade>
                         {allComponentsDisplayed && (
                         <Fade in={allComponentsDisplayed}>
-                            <Box p={10} mt={150} textAlign="center">
+                            <Box p={10} mt={110} textAlign="center">
                                 <Text fontSize="x-large" fontWeight="bold" color="purple.600">
                                     Want to try another prebuilt PC?
                                 </Text>
@@ -134,42 +143,7 @@ const Comparison = () => {
                     )}
                     </VStack>
                     
-                    <Box w="100%" pl="350px">
-                        <Box w="135%" textAlign="center" mb={6}>
-                            <Text fontSize="xx-large" fontWeight="bold" color="gray.700" textAlign="center">
-                                Components
-                            </Text>
-                        </Box>
-                        <Grid templateColumns="repeat(3, 1fr)" gap={10}>
-                            {comparisonData.parts.map((part, index) => (
-                                <ScaleFade in={visibleParts.includes(index)} initialScale={0.9} key={index}>
-                                    <Box 
-                                        p={6} 
-                                        shadow="lg" 
-                                        borderWidth="2px" 
-                                        borderRadius="lg" 
-                                        bg="white" 
-                                        h="250px" 
-                                        w="300px" 
-                                        display="flex" 
-                                        flexDirection="column" 
-                                        justifyContent="space-between"
-                                    >
-                                        <Box>
-                                            <Text fontSize="xl" fontWeight="semibold" color="teal.600">{part.name}</Text>
-                                            <Text><strong>Type:</strong> {part.type}</Text>
-                                            <Text><strong>Price:</strong> ${part.price.toFixed(2)}</Text>
-                                        </Box>
-                                        <Box display="flex" justifyContent="center" mt={4}>
-                                            <Button as={ChakraLink} href={part.link} target="_blank" colorScheme="blue">
-                                                View Part
-                                            </Button>
-                                        </Box>
-                                    </Box>
-                                </ScaleFade>
-                            ))}
-                        </Grid>
-                    </Box>
+                    <Components parts={comparisonData.parts} visibleParts={visibleParts} />
                 </HStack>
             )}
         </VStack>

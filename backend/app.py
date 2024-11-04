@@ -1,8 +1,15 @@
 from flask import Flask, request, jsonify
+from flask_cors import CORS
 from scrapers.specs_scraper import get_html_content, extract_relevant_html, scrape_specs_from_html, parse_parts_and_prices
 from models.database import insert_comparison
+from dotenv import load_dotenv
+
+import os
+
+load_dotenv()
 
 app = Flask(__name__)
+CORS(app, origins=[f"{os.getenv('FRONTEND_URL')}"])
 
 @app.route('/scrape', methods=['POST'])
 def scrape():
