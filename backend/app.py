@@ -9,16 +9,21 @@ load_dotenv()
 
 app = Flask(__name__)
 
-CORS(app, resources={r"/*": {"origins": [os.getenv('FRONTEND_URL')]}})
+CORS(app, supports_credentials=True)
+print("FRONTEND_URL:", os.getenv('FRONTEND_URL'))
+
+@app.after_request
+def add_cors_headers(response):
+    response.headers["Access-Control-Allow-Origin"] = os.getenv('FRONTEND_URL') or '*'
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    return response
 
 @app.route('/scrape', methods=['POST', 'OPTIONS'])
 def scrape():
     if request.method == 'OPTIONS':
-        response = jsonify({'status': 'OK'})
-        response.headers.add("Access-Control-Allow-Origin", os.getenv('FRONTEND_URL'))
-        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
-        response.headers.add("Access-Control-Allow-Methods", "POST,OPTIONS")
-        return response
+        return jsonify({'status': 'OK'})
     
     data = request.json
     url = data.get('url')
