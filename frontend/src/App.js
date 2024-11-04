@@ -5,6 +5,7 @@ import Home from './components/Home';
 import Comparison from './components/Comparison';
 import Header from './components/Header';
 import Footer from './components/Footer';
+import ErrorPage from './ErrorPage';
 
 function App() {
     return (
@@ -15,6 +16,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/comparison" element={<Comparison />} />
+                        <Route path="*" element={<ErrorPage />} />  
                     </Routes>
                 </Box>
             </Container>
