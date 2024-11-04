@@ -124,7 +124,7 @@ const Comparison = () => {
                                     <strong>Difference:</strong> 
                                     {comparisonData.price_difference < 0 
                                         ? ` -$${Math.abs(comparisonData.price_difference).toFixed(2)}`
-                                        : `$${comparisonData.price_difference.toFixed(2)}`
+                                        : ` $${comparisonData.price_difference.toFixed(2)}`
                                     }
                                 </Text>
                             </Box>

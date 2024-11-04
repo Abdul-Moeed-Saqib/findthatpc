@@ -1,6 +1,7 @@
 import requests
 import re
 import os
+import time
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -184,12 +185,19 @@ def extract_features(part_name):
 
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None):
-    search_url = f"https://www.newegg.ca/p/pl?d={component_type.replace(' ', '+')}"
+    search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
     headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36',
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Accept-Encoding': 'gzip, deflate, br',
+        'Referer': 'https://www.newegg.com/',
+        'DNT': '1',  
+        'Connection': 'keep-alive',
+        'Upgrade-Insecure-Requests': '1'
     }
     
     try:
+        time.sleep(1)
         response = requests.get(search_url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
