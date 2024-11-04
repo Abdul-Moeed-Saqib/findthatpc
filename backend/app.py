@@ -14,7 +14,11 @@ CORS(app, resources={r"/*": {"origins": [os.getenv('FRONTEND_URL')]}})
 @app.route('/scrape', methods=['POST', 'OPTIONS'])
 def scrape():
     if request.method == 'OPTIONS':
-        return jsonify({'status': 'OK'}), 200
+        response = jsonify({'status': 'OK'})
+        response.headers.add("Access-Control-Allow-Origin", os.getenv('FRONTEND_URL'))
+        response.headers.add("Access-Control-Allow-Headers", "Content-Type,Authorization")
+        response.headers.add("Access-Control-Allow-Methods", "POST,OPTIONS")
+        return response
     
     data = request.json
     url = data.get('url')
@@ -50,4 +54,4 @@ def scrape():
     }), 200
 
 if __name__ == '__main__':
-    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 5000)))
+    app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
