@@ -1,6 +1,5 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
-from flask_cors import cross_origin
 from scrapers.specs_scraper import get_html_content, extract_relevant_html, scrape_specs_from_html, parse_parts_and_prices
 from models.database import insert_comparison
 from dotenv import load_dotenv
@@ -13,10 +12,15 @@ app = Flask(__name__)
 CORS(app, supports_credentials=True)
 
 @app.route('/api/scrape', methods=['POST', 'OPTIONS'])
-@cross_origin()
 def scrape():
     if request.method == 'OPTIONS':
-        return jsonify({'status': 'OK'})
+        response = jsonify({'status': 'OK'})
+
+        response.headers["Access-Control-Allow-Origin"] = '*'
+        response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+        response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+        response.headers["Access-Control-Allow-Credentials"] = "true"
+        return response
     
     data = request.json
     url = data.get('url')
@@ -43,13 +47,20 @@ def scrape():
 
     #insert_comparison(url, prebuilt_price, total_parts_price, difference, parts) Saves it to the database
 
-    return jsonify({
+    response = jsonify({
         "prebuilt_name": prebuilt_name,
         "prebuilt_price": prebuilt_price,
         "parts": parts,
         "total_parts_price": total_parts_price,
         "price_difference": difference
-    }), 200
+    })
+
+    response.headers["Access-Control-Allow-Origin"] = '*'
+    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+
+    return response, 200
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.environ.get("PORT", 10000)))
