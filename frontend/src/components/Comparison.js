@@ -28,6 +28,7 @@ const Comparison = () => {
                         'Content-Type': 'application/json',
                         'Accept': 'application/json',
                     },
+                    withCredentials: true,
                 });
             setComparisonData(response.data);
         } catch (error) {

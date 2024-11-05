@@ -16,10 +16,12 @@ def scrape():
     if request.method == 'OPTIONS':
         response = jsonify({'status': 'OK'})
 
-        response.headers["Access-Control-Allow-Origin"] = '*'
+        response.headers["Access-Control-Allow-Origin"] = os.getenv('FRONTEND_URL') or '*'
         response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
         response.headers["Access-Control-Allow-Credentials"] = "true"
+
+        print(response.headers)
         return response
     
     data = request.json
@@ -55,7 +57,7 @@ def scrape():
         "price_difference": difference
     })
 
-    response.headers["Access-Control-Allow-Origin"] = '*'
+    response.headers["Access-Control-Allow-Origin"] = os.getenv('FRONTEND_URL') or '*'
     response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
     response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
     response.headers["Access-Control-Allow-Credentials"] = "true"
