@@ -17,7 +17,7 @@ def get_html_content(url):
     try:
         response = requests.get(url)
         if response.status_code != 200:
-            return None, f"Failed to fetch page content. Status code: {response.status_code}"
+            return None, f"Failed to fetch page content. Status code: {response.text}"
         
         html_content = response.content
     except requests.exceptions.RequestException as e:
