@@ -1,5 +1,6 @@
 from flask import Flask, request, jsonify
 from flask_cors import CORS
+from functools import wraps
 from scrapers.specs_scraper import get_html_content, extract_relevant_html, scrape_specs_from_html, parse_parts_and_prices
 from models.database import insert_comparison
 from dotenv import load_dotenv
@@ -7,20 +8,31 @@ import os
 
 load_dotenv()
 
+
+def crossdomain(origin='*', methods=None, headers=None):
+    if methods is None:
+        methods = ['GET', 'POST', 'PUT', 'DELETE']
+    if headers is None:
+        headers = ['Content-Type', 'Authorization']
+
+    def decorator(f):
+        @wraps(f)
+        def wrapped_function(*args, **kwargs):
+            response = f(*args, **kwargs)
+            response.headers['Access-Control-Allow-Origin'] = origin
+            response.headers['Access-Control-Allow-Methods'] = ', '.join(methods)
+            response.headers['Access-Control-Allow-Headers'] = ', '.join(headers)
+            return response
+
+        return wrapped_function
+    return decorator
+
 app = Flask(__name__)
 
-CORS(app, supports_credentials=True)
-print("FRONTEND_URL:", os.getenv('FRONTEND_URL'))
-
-@app.after_request
-def add_cors_headers(response):
-    response.headers["Access-Control-Allow-Origin"] = os.getenv('FRONTEND_URL') or '*'
-    response.headers["Access-Control-Allow-Headers"] = "Content-Type,Authorization"
-    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
-    response.headers["Access-Control-Allow-Credentials"] = "true"
-    return response
+CORS(app)
 
 @app.route('/api/scrape', methods=['POST', 'OPTIONS'])
+@crossdomain(origin='*')
 def scrape():
     if request.method == 'OPTIONS':
         return jsonify({'status': 'OK'})
