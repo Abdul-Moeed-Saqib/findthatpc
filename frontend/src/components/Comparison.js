@@ -20,7 +20,7 @@ const Comparison = () => {
         setVisibleParts([]);
         setAllComponentsDisplayed(false);
         try {
-            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/scrape`, { url: url.trim() });
+            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/scrape`, { url: url.trim() });
             setComparisonData(response.data);
         } catch (error) {
             console.error("Error fetching data:", error);
