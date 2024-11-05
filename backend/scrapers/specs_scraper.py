@@ -1,7 +1,7 @@
 import requests
 import re
 import os
-import time
+from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
 
@@ -9,15 +9,18 @@ load_dotenv()
 
 # This function gets the html content
 def get_html_content(url):
+    ua = UserAgent()
     accepted_domains = ["newegg.ca", "newegg.com", "canadacomputers.com", "bestbuy.ca"]
     
     if not any(domain in url for domain in accepted_domains):
         return None, "Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed."
     
     try:
-        response = requests.get(url)
+        headers = {"User-Agent": ua.random}
+        response = requests.get(url, headers=headers)
         if response.status_code != 200:
-            return None, f"Failed to fetch page content. Status code: {response.text}"
+            print(response.text)
+            return None, f"Failed to fetch page content. Status code: {response.status_code}"
         
         html_content = response.content
     except requests.exceptions.RequestException as e:
