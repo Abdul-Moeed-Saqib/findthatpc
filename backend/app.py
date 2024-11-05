@@ -20,7 +20,7 @@ def add_cors_headers(response):
     response.headers["Access-Control-Allow-Credentials"] = "true"
     return response
 
-@app.route('/scrape', methods=['POST', 'OPTIONS'])
+@app.route('/api/scrape', methods=['POST', 'OPTIONS'])
 def scrape():
     if request.method == 'OPTIONS':
         return jsonify({'status': 'OK'})
