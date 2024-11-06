@@ -13,9 +13,13 @@ load_dotenv()
 
 ua = UserAgent()
 
-session = requests.Session()
-retries = Retry(total=5, backoff_factor=1, status_forcelist=[403, 429, 500, 502, 503, 504])
-session.mount("https://", HTTPAdapter(max_retries=retries))
+proxies = [
+    "http://8.8.8.8:8080", 
+    "http://8.8.4.4:8080",
+]
+
+def get_random_proxy():
+    return {'http': random.choice(proxies), 'https': random.choice(proxies)}
 
 # This function gets the html content
 def get_html_content(url):
@@ -207,9 +211,9 @@ def search_part_price(part_name, component_type=None):
     }
     
     try:
-        response = session.get(search_url, headers=headers)
-        time.sleep(random.uniform(1.5, 3.0))  
-
+        response = requests.get(search_url, headers=headers, proxies=get_random_proxy(), timeout=10)
+        time.sleep(random.uniform(1.5, 3.0)) 
+        
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             part_features = extract_features(component_type)
