@@ -1,5 +1,5 @@
 from flask import Flask, request, jsonify
-from flask_cors import CORS
+from flask_cors import CORS, cross_origin
 from scrapers.specs_scraper import get_html_content, extract_relevant_html, scrape_specs_from_html, parse_parts_and_prices
 from models.database import insert_comparison
 from dotenv import load_dotenv
@@ -8,25 +8,29 @@ import os
 load_dotenv()
 
 app = Flask(__name__)
+CORS(app, supports_credentials=True)
 
 frontend_url = os.getenv('FRONTEND_URL') or '*'
 
-@app.before_request
 def handle_options_request():
-    if request.method == 'OPTIONS':
-        response = app.make_response(('OK', 204))
-        response.headers["Access-Control-Allow-Origin"] = frontend_url or "*"
-        response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
-        response.headers["Access-Control-Allow-Headers"] = (
-            "Content-Type, Authorization, X-Content-Type-Options, Accept, X-Requested-With, Origin, "
-            "Access-Control-Request-Method, Access-Control-Request-Headers"
-        )
-        response.headers["Access-Control-Allow-Credentials"] = "true"
-        response.headers["Access-Control-Max-Age"] = "7200"
-        return response
+    
+    response = jsonify({'status': 'OK'})
+    response.headers["Access-Control-Allow-Origin"] = frontend_url or "*"
+    response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
+    response.headers["Access-Control-Allow-Headers"] = (
+        "Content-Type, Authorization, X-Content-Type-Options, Accept, X-Requested-With, Origin, "
+        "Access-Control-Request-Method, Access-Control-Request-Headers"
+    )
+    response.headers["Access-Control-Allow-Credentials"] = "true"
+    response.headers["Access-Control-Max-Age"] = "7200"
+    return response
 
-@app.route('/api/scrape', methods=['POST'])
+@app.route('/api/scrape', methods=['POST', 'OPTIONS'])
+@cross_origin(supports_credentials=True)
 def scrape():
+    if request.method == 'OPTIONS': 
+        return handle_options_request()
+
     data = request.json
     url = data.get('url')
 
