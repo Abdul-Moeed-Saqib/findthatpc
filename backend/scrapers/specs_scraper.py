@@ -7,9 +7,10 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
+ua = UserAgent()
+
 # This function gets the html content
 def get_html_content(url):
-    ua = UserAgent()
     accepted_domains = ["newegg.ca", "newegg.com", "canadacomputers.com", "bestbuy.ca"]
     
     if not any(domain in url for domain in accepted_domains):
@@ -188,12 +189,13 @@ def extract_features(part_name):
 
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None):
-    scraper_api_key = os.getenv('SCRAPERAPI_KEY') 
     search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
-    api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={search_url}"
+    headers = {
+        'User-Agent': ua.random
+    }
 
     try:
-        response = requests.get(api_url)
+        response = requests.get(search_url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
             part_features = extract_features(component_type)  
