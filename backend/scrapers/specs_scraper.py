@@ -1,41 +1,33 @@
 import requests
 import re
 import os
-import time
-import random
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from requests.adapters import HTTPAdapter
-from urllib3.util.retry import Retry
 
 load_dotenv()
 
 ua = UserAgent()
 
-proxies = [
-    "http://8.8.8.8:8080", 
-    "http://8.8.4.4:8080",
-]
-
-def get_random_proxy():
-    return {'http': random.choice(proxies), 'https': random.choice(proxies)}
-
 # This function gets the html content
 def get_html_content(url):
     accepted_domains = ["newegg.ca", "newegg.com", "canadacomputers.com", "bestbuy.ca"]
-    
+
     if not any(domain in url for domain in accepted_domains):
         return None, "Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed."
     
+    scraper_api_key = os.getenv('SCRAPERAPI_KEY')
+    
+    api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={url}"
+    
     try:
-        headers = {"User-Agent": ua.random}
-        response = requests.get(url, headers=headers)
+        response = requests.get(api_url)
+        
         if response.status_code != 200:
-            print(response.text)
             return None, f"Failed to fetch page content. Status code: {response.status_code}"
         
         html_content = response.content
+        
     except requests.exceptions.RequestException as e:
         return None, f"Error fetching page content: {e}"
     
@@ -201,22 +193,15 @@ def extract_features(part_name):
 
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None):
+    scraper_api_key = os.getenv('SCRAPERAPI_KEY') 
     search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
-    headers = {
-        'User-Agent': ua.random,
-        'Accept-Language': 'en-US,en;q=0.9',
-        'Referer': 'https://www.google.com/',
-        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
-        'Connection': 'keep-alive'
-    }
-    
+    api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={search_url}"
+
     try:
-        response = requests.get(search_url, headers=headers, proxies=get_random_proxy(), timeout=10)
-        time.sleep(random.uniform(1.5, 3.0)) 
-        
+        response = requests.get(api_url)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            part_features = extract_features(component_type)
+            part_features = extract_features(component_type)  
             products = soup.find_all('div', class_='item-cell')
 
             for product in products:
@@ -224,10 +209,10 @@ def search_part_price(part_name, component_type=None):
                 if product_title_element:
                     product_title = product_title_element.text.lower()
                     
-                    # Verification
+                    # verification
                     matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:
-                        if verify_part_match(part_name, product_title, component_type):
+                    if matches >= len(part_features) // 2:  
+                        if verify_part_match(part_name, product_title, component_type): 
                             price_element = product.find('li', class_='price-current')
                             if price_element:
                                 price_text = price_element.text.strip()
