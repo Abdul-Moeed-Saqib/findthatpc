@@ -1,13 +1,21 @@
 import requests
 import re
 import os
+import time
+import random
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from requests.adapters import HTTPAdapter
+from urllib3.util.retry import Retry
 
 load_dotenv()
 
 ua = UserAgent()
+
+session = requests.Session()
+retries = Retry(total=5, backoff_factor=1, status_forcelist=[403, 429, 500, 502, 503, 504])
+session.mount("https://", HTTPAdapter(max_retries=retries))
 
 # This function gets the html content
 def get_html_content(url):
@@ -191,14 +199,20 @@ def extract_features(part_name):
 def search_part_price(part_name, component_type=None):
     search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
     headers = {
-        'User-Agent': ua.random
+        'User-Agent': ua.random,
+        'Accept-Language': 'en-US,en;q=0.9',
+        'Referer': 'https://www.google.com/',
+        'Accept': 'text/html,application/xhtml+xml,application/xml;q=0.9,image/webp,*/*;q=0.8',
+        'Connection': 'keep-alive'
     }
-
+    
     try:
-        response = requests.get(search_url, headers=headers)
+        response = session.get(search_url, headers=headers)
+        time.sleep(random.uniform(1.5, 3.0))  
+
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            part_features = extract_features(component_type)  
+            part_features = extract_features(component_type)
             products = soup.find_all('div', class_='item-cell')
 
             for product in products:
@@ -206,10 +220,10 @@ def search_part_price(part_name, component_type=None):
                 if product_title_element:
                     product_title = product_title_element.text.lower()
                     
-                    # verification
+                    # Verification
                     matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:  
-                        if verify_part_match(part_name, product_title, component_type): 
+                    if matches >= len(part_features) // 2:
+                        if verify_part_match(part_name, product_title, component_type):
                             price_element = product.find('li', class_='price-current')
                             if price_element:
                                 price_text = price_element.text.strip()
