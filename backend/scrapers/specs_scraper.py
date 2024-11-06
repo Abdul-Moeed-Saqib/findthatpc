@@ -21,8 +21,20 @@ def get_html_content(url):
    # api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={url}"
     
     try:
-        headers = {"User-Agent": ua.random}
-        response = requests.get(url, headers=headers)
+        headers = {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        }
+
+        proxies = {
+            "http": "128.127.94.160:5678",
+            "http": "186.251.255.17:31337",
+            "http": "103.210.31.49:31433",
+            "http": "45.128.135.255:1080",
+            "http": "178.32.100.226:2546",
+            "http": "217.23.15.50:14917",
+            "http": "43.248.27.11:54730",
+        }
+        response = requests.get(url, headers=headers, proxies=proxies)
         
         if response.status_code != 200:
             return None, f"Failed to fetch page content. Status code: {response.status_code}"
