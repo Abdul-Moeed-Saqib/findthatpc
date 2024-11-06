@@ -16,12 +16,13 @@ def get_html_content(url):
     if not any(domain in url for domain in accepted_domains):
         return None, "Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed."
     
-    scraper_api_key = os.getenv('SCRAPERAPI_KEY')
+    #scraper_api_key = os.getenv('SCRAPERAPI_KEY')
     
-    api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={url}"
+   # api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={url}"
     
     try:
-        response = requests.get(api_url)
+        headers = {"User-Agent": ua.random}
+        response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
             return None, f"Failed to fetch page content. Status code: {response.status_code}"
