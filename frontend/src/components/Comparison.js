@@ -22,7 +22,8 @@ const Comparison = () => {
         try {
             const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/scrape`, 
                 { 
-                    url: url.trim() 
+                    url: url.trim(),
+                    userAgent: navigator.userAgent
                 }, {
                     headers: {
                         'Content-Type': 'application/json',

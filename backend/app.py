@@ -25,6 +25,18 @@ def handle_options_request():
     response.headers["Access-Control-Max-Age"] = "7200"
     return response
 
+def detect_browser(user_agent):
+    if "Chrome" in user_agent and "Edg" not in user_agent:
+        return "chrome"
+    elif "Firefox" in user_agent:
+        return "firefox"
+    elif "Edg" in user_agent:
+        return "edge"
+    elif "Safari" in user_agent and "Chrome" not in user_agent:
+        return "safari"
+    else:
+        return "chrome" 
+
 @app.route('/api/scrape', methods=['POST', 'OPTIONS'])
 def scrape():
     if request.method == 'OPTIONS': 
@@ -33,9 +45,12 @@ def scrape():
     if request.method == 'POST':
         data = request.json
         url = data.get('url')
+        user_agent = data.get('userAgent')
 
         if not url:
             return jsonify({"error": "URL is required"}), 400
+        
+        browser = detect_browser(user_agent)
 
         html_content, error = get_html_content(url)
         if error:
@@ -47,7 +62,7 @@ def scrape():
         if not parts_text:
             return jsonify({"error": "Failed to extract parts and prices"}), 500
 
-        prebuilt_name, parts = parse_parts_and_prices(parts_text)
+        prebuilt_name, parts = parse_parts_and_prices(parts_text, browser)
         if not prebuilt_name or not prebuilt_price or not parts:
             return jsonify({"error": "Failed to extract valid parts, prebuilt name, or prebuilt price"}), 400
 

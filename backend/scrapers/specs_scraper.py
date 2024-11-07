@@ -4,10 +4,45 @@ import os
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
+from selenium.webdriver.chrome.options import Options as ChromeOptions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.edge.options import Options as EdgeOptions
+import time
 
 load_dotenv()
 
 ua = UserAgent()
+
+def get_driver(browser):
+    if browser.lower() == "chrome":
+        chrome_options = ChromeOptions()
+        chrome_options.add_argument("--headless")  
+        chrome_options.add_argument("--no-sandbox")
+        chrome_options.add_argument("--disable-dev-shm-usage")
+        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        return webdriver.Chrome(options=chrome_options)
+    
+    elif browser.lower() == "firefox":
+        firefox_options = FirefoxOptions()
+        firefox_options.headless = True  
+        firefox_options.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        return webdriver.Firefox(options=firefox_options)
+
+    elif browser.lower() == "edge":
+        edge_options = EdgeOptions()
+        edge_options.add_argument("--headless")  
+        edge_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        return webdriver.Edge(options=edge_options)
+
+    elif browser.lower() == "safari":
+        return webdriver.Safari()
+    
+    else:
+        raise ValueError("Browser not supported. Please choose from: 'chrome', 'firefox', 'edge', 'safari'.")
 
 # This function gets the html content
 def get_html_content(url):
@@ -22,19 +57,11 @@ def get_html_content(url):
     
     try:
         headers = {
-        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/91.0.4472.124 Safari/537.36'
+        'User-Agent': ua.random
         }
 
-        proxies = {
-            "http": "128.127.94.160:5678",
-            "http": "186.251.255.17:31337",
-            "http": "103.210.31.49:31433",
-            "http": "45.128.135.255:1080",
-            "http": "178.32.100.226:2546",
-            "http": "217.23.15.50:14917",
-            "http": "43.248.27.11:54730",
-        }
-        response = requests.get(url, headers=headers, proxies=proxies)
+        
+        response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
             return None, f"Failed to fetch page content. Status code: {response.status_code}"
@@ -205,40 +232,42 @@ def extract_features(part_name):
     return features
 
 # This function searches prices of the parts using web scraping
-def search_part_price(part_name, component_type=None):
-    scraper_api_key = os.getenv('SCRAPERAPI_KEY') 
+def search_part_price(part_name, component_type=None, browser="chrome"):
     search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
-    api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={search_url}"
-
+    driver = get_driver(browser)
+    
     try:
-        response = requests.get(api_url)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            part_features = extract_features(component_type)  
-            products = soup.find_all('div', class_='item-cell')
+        driver.get(search_url)
+        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "item-cell")))
 
-            for product in products:
-                product_title_element = product.find('a', class_='item-title')
-                if product_title_element:
-                    product_title = product_title_element.text.lower()
-                    
-                    # verification
-                    matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:  
-                        if verify_part_match(part_name, product_title, component_type): 
-                            price_element = product.find('li', class_='price-current')
-                            if price_element:
-                                price_text = price_element.text.strip()
-                                product_link = product_title_element['href']
-                                return price_text, product_link
-            print(f"No close match found for part: {part_name}")
-            return None, None
-        else:
-            print(f"Failed to fetch page for {part_name}. Status code: {response.status_code}")
-            return None, None
+        html = driver.page_source
+        soup = BeautifulSoup(html, 'html.parser')
+        part_features = extract_features(component_type)  
+
+        products = soup.find_all('div', class_='item-cell')
+        for product in products:
+            product_title_element = product.find('a', class_='item-title')
+            if product_title_element:
+                product_title = product_title_element.text.lower()
+                
+                # verification
+                matches = sum(feature in product_title for feature in part_features)
+                if matches >= len(part_features) // 2:
+                    if verify_part_match(part_name, product_title, component_type):
+                        price_element = product.find('li', class_='price-current')
+                        if price_element:
+                            price_text = price_element.text.strip()
+                            product_link = product_title_element['href']
+                            return price_text, product_link
+        print(f"No close match found for part: {part_name}")
+        return None, None
+
     except Exception as e:
         print(f"Error fetching part price: {e}")
         return None, None
+
+    finally:
+        driver.quit()
 
 # This function verify if product matches with the component using AI
 def verify_part_match(part_name, product_title, component_type=None):
@@ -271,7 +300,7 @@ def verify_part_match(part_name, product_title, component_type=None):
     
 
 # This function parses the parts with the prices from the AI response
-def parse_parts_and_prices(ai_output):
+def parse_parts_and_prices(ai_output, browser):
     parts = []
     prebuilt_name = None
     lines = ai_output.split('\n')
@@ -283,7 +312,7 @@ def parse_parts_and_prices(ai_output):
             try:
                 name, part_type = line.split(':', 1)
                 name, part_type = name.strip(), part_type.strip()
-                price, link = search_part_price(name, part_type)
+                price, link = search_part_price(name, part_type, browser)
                 
                 if price and link:
                     parts.append({
