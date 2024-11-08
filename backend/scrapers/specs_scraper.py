@@ -20,22 +20,27 @@ ua = UserAgent()
 def get_driver(browser):
     if browser.lower() == "chrome":
         chrome_options = ChromeOptions()
-        chrome_options.add_argument("--headless")  
+        chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--disable-gpu")  
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        chrome_options.add_argument("--disable-extensions") 
+        chrome_options.add_argument("--disable-infobars")  
+        chrome_options.add_argument("--disable-notifications") 
+        chrome_options.add_argument("--disable-blink-features=AutomationControlled")  
+        chrome_options.add_argument(f"user-agent={ua.random}")
         return webdriver.Chrome(options=chrome_options)
     
     elif browser.lower() == "firefox":
         firefox_options = FirefoxOptions()
         firefox_options.headless = True  
-        firefox_options.set_preference("general.useragent.override", "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        firefox_options.set_preference("general.useragent.override", ua.random)
         return webdriver.Firefox(options=firefox_options)
 
     elif browser.lower() == "edge":
         edge_options = EdgeOptions()
         edge_options.add_argument("--headless")  
-        edge_options.add_argument("user-agent=Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/90.0.4430.212 Safari/537.36")
+        edge_options.add_argument(f"user-agent={ua.random}")
         return webdriver.Edge(options=edge_options)
 
     elif browser.lower() == "safari":
