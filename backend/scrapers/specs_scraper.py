@@ -206,10 +206,10 @@ def search_part_price(part_name, component_type=None):
         "GPU": "N=4294966937",
         "Motherboard": "N=4294966996",
         "RAM": "N=4294966965",
-        "Storage": "N=4294966966",
-        "Cooling": "N=4294966988",
-        "Power Supply": "N=4294966972",
-        "Case": "N=4294966970",
+        "Storage": "N=4294822457+4294966998",
+        "Cooling": "N=4294822457+4294966998+4294819366",
+        "Power Supply": "N=4294822457+4294966998",
+        "Case": "N=4294964318",
     }
     
     category_filter = component_category.get(part_name, "")
