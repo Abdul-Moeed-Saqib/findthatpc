@@ -11,8 +11,6 @@ from selenium.webdriver.support import expected_conditions as EC
 from selenium.webdriver.chrome.options import Options as ChromeOptions
 from selenium.webdriver.firefox.options import Options as FirefoxOptions
 from selenium.webdriver.edge.options import Options as EdgeOptions
-from selenium.webdriver.chrome.service import Service
-from webdriver_manager.chrome import ChromeDriverManager
 import time
 
 load_dotenv()
@@ -23,6 +21,7 @@ def get_driver(browser):
     if browser.lower() == "chrome":
         chrome_options = ChromeOptions()
         chrome_options.add_argument("--headless")
+        chrome_options.add_argument("--incognito")
         chrome_options.add_argument("--disable-gpu")  
         chrome_options.add_argument("--no-sandbox")
         chrome_options.add_argument("--disable-dev-shm-usage")
@@ -31,8 +30,7 @@ def get_driver(browser):
         chrome_options.add_argument("--disable-notifications") 
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")  
         chrome_options.add_argument(f"user-agent={ua.random}")
-        chrome_options.binary_location = "/usr/bin/google-chrome" 
-        return  webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
+        return webdriver.Chrome(options=chrome_options)
     
     elif browser.lower() == "firefox":
         firefox_options = FirefoxOptions()
@@ -241,7 +239,7 @@ def extract_features(part_name):
 
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None, browser="chrome"):
-    search_url = f"https://www.newegg.ca/p/pl?d={component_type.replace(' ', '+')}"
+    search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
     driver = get_driver(browser)
     
     try:
