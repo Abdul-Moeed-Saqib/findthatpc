@@ -31,6 +31,7 @@ def get_driver(browser):
         chrome_options.add_argument("--disable-notifications") 
         chrome_options.add_argument("--disable-blink-features=AutomationControlled")  
         chrome_options.add_argument(f"user-agent={ua.random}")
+        chrome_options.binary_location = "/usr/bin/google-chrome" 
         return  webdriver.Chrome(service=Service(ChromeDriverManager().install()), options=chrome_options)
     
     elif browser.lower() == "firefox":
