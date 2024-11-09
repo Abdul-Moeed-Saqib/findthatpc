@@ -22,8 +22,7 @@ const Comparison = () => {
         try {
             const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/scrape`, 
                 { 
-                    url: url.trim(),
-                    userAgent: navigator.userAgent
+                    url: url.trim()
                 }, {
                     headers: {
                         'Content-Type': 'application/json',
@@ -70,14 +69,14 @@ const Comparison = () => {
                     <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
                         <Text fontSize="lg" fontWeight="medium">
                             Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself.
-                            Simply enter a link to a prebuilt PC from Newegg or Canada Computers, and we’ll break down the prices for each individual component.
+                            Simply enter a link to a prebuilt PC from Micro Center or Canada Computers, and we’ll break down the prices for each individual component.
                             Our app helps you decide if buying a prebuilt is worth it or if building from parts is a more budget-friendly option.
                         </Text>
                         <Text fontSize="lg" mt={2}>
-                            Note: Please use only product links from Newegg or Canada Computers. Example URLs:
+                            Note: Please use only product links from Micro Center or Canada Computers. Example URLs:
                         </Text>
                         <Text fontSize="sm" color="gray.500" mt={1}>
-                            - https://www.newegg.com/productpage
+                            - https://www.microcenter.com/productpage
                         </Text>
                         <Text fontSize="sm" color="gray.500">
                             - https://www.canadacomputers.com/productpage

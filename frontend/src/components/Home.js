@@ -22,7 +22,7 @@ const Home = () => {
                     FindThatPC.AI compares the prices of prebuilt PCs against individual components.
                 </Text>
                 <Text fontSize="md" mt={4}>
-                    We support only <strong>Newegg</strong> and <strong>CanadaComputers</strong> links.
+                    We support only <strong>Micro Center</strong> and <strong>CanadaComputers</strong> links.
                 </Text>
             </Box>
             <Button colorScheme="blue" size={"lg"} onClick={() => navigate('/comparison')}>
