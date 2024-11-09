@@ -4,69 +4,25 @@ import os
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from selenium import webdriver
-from selenium.webdriver.common.by import By
-from selenium.webdriver.support.ui import WebDriverWait
-from selenium.webdriver.support import expected_conditions as EC
-from selenium.webdriver.chrome.options import Options as ChromeOptions
-from selenium.webdriver.firefox.options import Options as FirefoxOptions
-from selenium.webdriver.edge.options import Options as EdgeOptions
-import time
 
 load_dotenv()
 
 ua = UserAgent()
 
-def get_driver(browser):
-    if browser.lower() == "chrome":
-        chrome_options = ChromeOptions()
-        chrome_options.add_argument("--headless")
-        chrome_options.add_argument("--incognito")
-        chrome_options.add_argument("--disable-gpu")  
-        chrome_options.add_argument("--no-sandbox")
-        chrome_options.add_argument("--disable-dev-shm-usage")
-        chrome_options.add_argument("--disable-extensions") 
-        chrome_options.add_argument("--disable-infobars")  
-        chrome_options.add_argument("--disable-notifications") 
-        chrome_options.add_argument("--disable-blink-features=AutomationControlled")  
-        chrome_options.add_argument(f"user-agent={ua.random}")
-        return webdriver.Chrome(options=chrome_options)
-    
-    elif browser.lower() == "firefox":
-        firefox_options = FirefoxOptions()
-        firefox_options.headless = True  
-        firefox_options.set_preference("general.useragent.override", ua.random)
-        return webdriver.Firefox(options=firefox_options)
-
-    elif browser.lower() == "edge":
-        edge_options = EdgeOptions()
-        edge_options.add_argument("--headless")  
-        edge_options.add_argument(f"user-agent={ua.random}")
-        return webdriver.Edge(options=edge_options)
-
-    elif browser.lower() == "safari":
-        return webdriver.Safari()
-    
-    else:
-        raise ValueError("Browser not supported. Please choose from: 'chrome', 'firefox', 'edge', 'safari'.")
-
 # This function gets the html content
 def get_html_content(url):
-    accepted_domains = ["newegg.ca", "newegg.com", "canadacomputers.com", "bestbuy.ca"]
+    accepted_domains = [
+        "microcenter.com", "canadacomputers.com", "bestbuy.ca", "bestbuy.com"
+    ]
 
     if not any(domain in url for domain in accepted_domains):
-        return None, "Invalid URL. Only Newegg, Canadian Computers, and Best Buy links are allowed."
-    
-    #scraper_api_key = os.getenv('SCRAPERAPI_KEY')
-    
-   # api_url = f"http://api.scraperapi.com/?api_key={scraper_api_key}&url={url}"
+        return None, "Invalid URL. Only Micro Center, Memory Express, Canada Computers, and Best Buy links are allowed."
     
     try:
         headers = {
-        'User-Agent': ua.random
+            'User-Agent': ua.random
         }
 
-        
         response = requests.get(url, headers=headers)
         
         if response.status_code != 200:
@@ -119,8 +75,12 @@ def check_if_prebuilt_pc(html_content):
 def extract_relevant_html(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
 
+    # Specs section lookup
     specs_section = None
-    possible_sections = ['spec', 'details', 'specs', 'product-description', 'product-specs', 'product-details', 'product-bullets']
+    possible_sections = [
+        'spec', 'details', 'SpecTable', 'specs', 'product-description', 
+        'product-specs', 'product-details', 'product-bullets',
+    ]
 
     for section_class in possible_sections:
         specs_section = soup.find('div', class_=section_class) or soup.find('table', class_=section_class)
@@ -137,13 +97,14 @@ def extract_relevant_html(html_content):
     cleaned_specs_html = str(specs_section)
 
     price_patterns = [
-        {'site': 'newegg', 'class': ['price-current', 'price', 'price-value']},
         {'site': 'bestbuy', 'class': ['priceView-customer-price', 'pricing-price__regular-price']},
-        {'site': 'canadiancomputers', 'class': ['pq-hdr-price', 'price']},
+        {'site': 'canadacomputers', 'class': ['pq-hdr-price', 'price']},
+        {'site': 'microcenter', 'class': ['price', 'price__regular']}
     ]
     
     prebuilt_price = None
 
+    # Extract price based on defined classes
     for pattern in price_patterns:
         for price_class in pattern['class']:
             price_element = soup.find('li', class_=price_class) or soup.find('div', class_=price_class) or soup.find('span', class_=price_class)
@@ -238,42 +199,55 @@ def extract_features(part_name):
     return features
 
 # This function searches prices of the parts using web scraping
-def search_part_price(part_name, component_type=None, browser="chrome"):
-    search_url = f"https://www.newegg.com/p/pl?d={component_type.replace(' ', '+')}"
-    driver = get_driver(browser)
+def search_part_price(part_name, component_type=None):
+    base_url = "https://www.microcenter.com/search/search_results.aspx?"
+    component_category = {
+        "CPU": "N=4294966995",
+        "GPU": "N=4294966937",
+        "Motherboard": "N=4294966996",
+        "RAM": "N=4294966965",
+        "Storage": "N=4294966966",
+        "Cooling": "N=4294966988",
+        "Power Supply": "N=4294966972",
+        "Case": "N=4294966970",
+    }
     
+    category_filter = component_category.get(part_name, "")
+    search_url = f"{base_url}{category_filter}&Ntt={component_type.replace(' ', '+')}&searchButton=search"
+
+    headers = {
+        'User-Agent': ua.random
+    }
+
     try:
-        driver.get(search_url)
-        WebDriverWait(driver, 10).until(EC.presence_of_element_located((By.CLASS_NAME, "item-cell")))
+        response = requests.get(search_url, headers=headers)
+        if response.status_code == 200:
+            soup = BeautifulSoup(response.content, 'html.parser')
+            part_features = extract_features(part_name)
+            products = soup.find_all('li', class_='product_wrapper')
 
-        html = driver.page_source
-        soup = BeautifulSoup(html, 'html.parser')
-        part_features = extract_features(component_type)  
+            for product in products:
+                product_title_element = product.find('a', class_='productClickItemV2')
+                if product_title_element:
+                    product_title = product_title_element['data-name'].lower()
 
-        products = soup.find_all('div', class_='item-cell')
-        for product in products:
-            product_title_element = product.find('a', class_='item-title')
-            if product_title_element:
-                product_title = product_title_element.text.lower()
-                
-                # verification
-                matches = sum(feature in product_title for feature in part_features)
-                if matches >= len(part_features) // 2:
-                    if verify_part_match(part_name, product_title, component_type):
-                        price_element = product.find('li', class_='price-current')
-                        if price_element:
-                            price_text = price_element.text.strip()
-                            product_link = product_title_element['href']
-                            return price_text, product_link
-        print(f"No close match found for part: {part_name}")
-        return None, None
-
+                    # verification
+                    matches = sum(feature in product_title for feature in part_features)
+                    if matches >= len(part_features) // 2:
+                        if verify_part_match(part_name, product_title, component_type):
+                            price_element = product.find('span', itemprop='price')
+                            if price_element:
+                                price_text = price_element.text.strip()
+                                product_link = "https://www.microcenter.com" + product_title_element['href']
+                                return price_text, product_link
+            print(f"No close match found for part: {part_name}")
+            return None, None
+        else:
+            print(f"Failed to fetch page for {part_name}. Status code: {response.status_code}")
+            return None, None
     except Exception as e:
         print(f"Error fetching part price: {e}")
         return None, None
-
-    finally:
-        driver.quit()
 
 # This function verify if product matches with the component using AI
 def verify_part_match(part_name, product_title, component_type=None):
@@ -306,7 +280,7 @@ def verify_part_match(part_name, product_title, component_type=None):
     
 
 # This function parses the parts with the prices from the AI response
-def parse_parts_and_prices(ai_output, browser):
+def parse_parts_and_prices(ai_output):
     parts = []
     prebuilt_name = None
     lines = ai_output.split('\n')
@@ -318,7 +292,7 @@ def parse_parts_and_prices(ai_output, browser):
             try:
                 name, part_type = line.split(':', 1)
                 name, part_type = name.strip(), part_type.strip()
-                price, link = search_part_price(name, part_type, browser)
+                price, link = search_part_price(name, part_type)
                 
                 if price and link:
                     parts.append({
