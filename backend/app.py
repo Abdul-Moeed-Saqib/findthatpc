@@ -69,6 +69,12 @@ def scrape():
         response.headers["Access-Control-Allow-Methods"] = "GET,POST,OPTIONS"
         response.headers["Access-Control-Allow-Credentials"] = "true"
         return response, 200
+    
+@app.route('/api/health', methods=['GET'])
+def health_check():
+    return jsonify({
+        "health": "OK"
+    })
 
 if __name__ == '__main__':
     app.run(host="0.0.0.0", port=int(os.getenv("PORT", 10000)))
