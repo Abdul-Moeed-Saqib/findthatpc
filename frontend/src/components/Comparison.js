@@ -87,6 +87,7 @@ const Comparison = () => {
                         placeholder="Enter prebuilt PC link"
                         value={url}
                         onChange={(e) => setURL(e.target.value)}
+                        isDisabled={loading}
                         size="lg"
                         maxWidth="500px"
                         mx="auto"
