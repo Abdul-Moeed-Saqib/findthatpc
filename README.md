@@ -78,7 +78,7 @@ For questions, feedback, or collaboration requests, reach out to us:
 
 ---
 
-**Acknowledgments**: This project is continually evolving, and we appreciate the support and input from our tech community.
+**Acknowledgments**: This project is continually evolving, and we appreciate the support.
 
 *Thank you for using FindThatPC.AI!*
  
