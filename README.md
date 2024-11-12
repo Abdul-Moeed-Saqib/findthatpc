@@ -25,7 +25,7 @@ FindThatPC.AI provides an innovative way to compare the cost of prebuilt PCs aga
 
 ## How It Works
 
-1. **Input a Prebuilt PC Link**: Simply provide a link to a prebuilt PC from Newegg or CanadaComputers.
+1. **Input a Prebuilt PC Link**: Simply provide a link to a prebuilt PC from Micro Center or CanadaComputers.
 2. **AI Analysis**: The AI verifies and matches components, filtering out irrelevant or duplicate items.
 3. **Cost Comparison**: View side-by-side comparisons of prebuilt pricing versus component pricing.
 
@@ -63,7 +63,7 @@ FindThatPC.AI provides an innovative way to compare the cost of prebuilt PCs aga
 
 ## Future Plans
 
-- **Additional Retailer Integrations**: Expanding beyond Newegg and CanadaComputers.
+- **Additional Retailer Integrations**: Expanding beyond Micro Center and CanadaComputers.
 - **User Accounts**: Save your comparisons and manage your preferences.
 - **Improved AI**: Ongoing advancements to enhance accuracy and efficiency.
 
