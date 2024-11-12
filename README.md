@@ -1,6 +1,6 @@
 # FindThatPC.AI
 
-![Project Logo or Banner]([link-to-your-banner-image](https://cdn.discordapp.com/attachments/602366822737772556/1305751288402673774/chip.png?ex=67342b26&is=6732d9a6&hm=c451417f2c5ce4853dc2e813c447fb91232eb9088145acc1ab944f3e78cd465a&))
+![Project Logo or Banner](https://cdn.discordapp.com/attachments/602366822737772556/1305751288402673774/chip.png?ex=67342b26&is=6732d9a6&hm=c451417f2c5ce4853dc2e813c447fb91232eb9088145acc1ab944f3e78cd465a&)
 
 **Version: 1.0**
 
@@ -56,7 +56,7 @@ FindThatPC.AI provides an innovative way to compare the cost of prebuilt PCs aga
 
 ### Results Page
 
-![Results Page Screenshot]([link-to-results-page-screenshot](https://cdn.discordapp.com/attachments/602366822737772556/1305751021351473213/image.png?ex=67342ae7&is=6732d967&hm=ec1674a22fb9591d34fb0a147ee32384dda552e63d973ff25fa02a7ef8cad734&))
+![Results Page Screenshot](https://cdn.discordapp.com/attachments/602366822737772556/1305751021351473213/image.png?ex=67342ae7&is=6732d967&hm=ec1674a22fb9591d34fb0a147ee32384dda552e63d973ff25fa02a7ef8cad734&)
 *Detailed breakdown of prebuilt information and component prices.*
 
 ---
