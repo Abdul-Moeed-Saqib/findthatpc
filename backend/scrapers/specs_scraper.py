@@ -4,6 +4,10 @@ import os
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from selenium import webdriver
+from selenium.webdriver.common.by import By
+from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support import expected_conditions as EC
 
 load_dotenv()
 
@@ -199,55 +203,51 @@ def extract_features(part_name):
     return features
 
 # This function searches prices of the parts using web scraping
-def search_part_price(part_name, component_type=None):
-    base_url = "https://www.microcenter.com/search/search_results.aspx?"
-    component_category = {
-        "CPU": "N=4294966995",
-        "GPU": "N=4294966937",
-        "Motherboard": "N=4294966996",
-        "RAM": "N=4294966965",
-        "Storage": "N=4294822457+4294966998",
-        "Cooling": "N=4294822457+4294966998+4294819366",
-        "Power Supply": "N=4294822457+4294966998",
-        "Case": "N=4294964318",
-    }
-    
-    category_filter = component_category.get(part_name, "")
-    search_url = f"{base_url}{category_filter}&Ntt={component_type.replace(' ', '+')}&searchButton=search"
+def search_part_price(part_name, component_type, driver):
+    base_url = "https://www.bestbuy.ca/en-ca/search?search="
+    search_url = f"{base_url}{component_type.replace(' ', '%20')}"
 
-    headers = {
-        'User-Agent': ua.random
-    }
+    driver.get(search_url)
 
     try:
-        response = requests.get(search_url, headers=headers)
-        if response.status_code == 200:
-            soup = BeautifulSoup(response.content, 'html.parser')
-            part_features = extract_features(part_name)
-            products = soup.find_all('li', class_='product_wrapper')
-
-            for product in products:
-                product_title_element = product.find('a', class_='productClickItemV2')
-                if product_title_element:
-                    product_title = product_title_element['data-name'].lower()
-
-                    # verification
-                    matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:
-                        if verify_part_match(part_name, product_title, component_type):
-                            price_element = product.find('span', itemprop='price')
-                            if price_element:
-                                price_text = price_element.text.strip()
-                                product_link = "https://www.microcenter.com" + product_title_element['href']
-                                return price_text, product_link
-            print(f"No close match found for part: {part_name}")
-            return None, None
-        else:
-            print(f"Failed to fetch page for {part_name}. Status code: {response.status_code}")
-            return None, None
+        WebDriverWait(driver, 15).until(
+            EC.presence_of_element_located((By.CLASS_NAME, "productItemTextContainer_HocvR"))
+        )
     except Exception as e:
-        print(f"Error fetching part price: {e}")
+        print(f"Error waiting for product container: {e}")
         return None, None
+
+    html = driver.page_source
+    soup = BeautifulSoup(html, 'html.parser')
+    part_features = extract_features(component_type)
+
+    product_containers = soup.find_all("div", class_="productItemTextContainer_HocvR")
+
+    for product in product_containers:
+        name_element = product.find("div", class_="productItemName_3IZ3c")
+        if name_element:
+            product_name = name_element.text.lower()
+
+            matches = sum(feature in product_name for feature in part_features)
+            if matches >= len(part_features) // 2:
+                if verify_part_match(part_name, product_name, component_type):
+                    pricing_container = product.find("div", class_="productPricingContainer_3gTS3")
+                    if pricing_container:
+                        price_element = pricing_container.find("span", class_="style-module_screenReaderOnly__4QmbS")
+                        price = price_element.text.strip() if price_element else "Price not found"
+                    else:
+                        price = "Price not found"
+
+                    link_element = product.find_parent("a")
+                    product_link = link_element['href'] if link_element else "Link not found"
+
+                    if product_link and "criteo" not in product_link:
+                        product_link = "https://www.bestbuy.ca" + product_link
+
+                    return price, product_link
+
+    print(f"No match found for part: {part_name}")
+    return None, None
 
 # This function verify if product matches with the component using AI
 def verify_part_match(part_name, product_title, component_type=None):
@@ -284,6 +284,11 @@ def parse_parts_and_prices(ai_output):
     parts = []
     prebuilt_name = None
     lines = ai_output.split('\n')
+
+    options = webdriver.ChromeOptions()
+    options.add_argument("--incognito")
+    options.add_argument("--headless")  
+    driver = webdriver.Chrome(options=options)
     
     for line in lines:
         if 'Prebuilt Name' in line:
@@ -292,7 +297,7 @@ def parse_parts_and_prices(ai_output):
             try:
                 name, part_type = line.split(':', 1)
                 name, part_type = name.strip(), part_type.strip()
-                price, link = search_part_price(name, part_type)
+                price, link = search_part_price(name, part_type, driver)
                 
                 if price and link:
                     parts.append({
@@ -304,4 +309,5 @@ def parse_parts_and_prices(ai_output):
             except ValueError:
                 continue
 
+    driver.quit()
     return prebuilt_name, parts

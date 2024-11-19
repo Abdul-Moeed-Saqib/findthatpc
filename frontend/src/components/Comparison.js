@@ -64,12 +64,12 @@ const Comparison = () => {
 
     return (
         <VStack spacing={6} mt={10} align="stretch" maxWidth="1200px" mx="auto">
-            {!comparisonData && (
-                <>
+            <Fade in={!loading}>
+                {!comparisonData && (
                     <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
                         <Text fontSize="lg" fontWeight="medium">
                             Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself.
-                            Simply enter a link to a prebuilt PC from Micro Center or Canada Computers, and we’ll break down the prices for each individual component.
+                            Simply enter a link to a prebuilt PC from Micro Center or Canada Computers, and we’ll break down the prices for each individual component from Best Buy.
                             Our app helps you decide if buying a prebuilt is worth it or if building from parts is a more budget-friendly option.
                         </Text>
                         <Text fontSize="lg" mt={2}>
@@ -81,35 +81,54 @@ const Comparison = () => {
                         <Text fontSize="sm" color="gray.500">
                             - https://www.canadacomputers.com/productpage
                         </Text>
+
+                        <Input
+                            placeholder="Enter prebuilt PC link"
+                            value={url}
+                            onChange={(e) => setURL(e.target.value)}
+                            isDisabled={loading}
+                            size="lg"
+                            maxWidth="500px"
+                            mx="auto"
+                            mt={4}
+                        />
+                        <Button
+                            colorScheme="blue"
+                            size="lg"
+                            onClick={handleStartComparison}
+                            isDisabled={!url.trim() || loading}
+                            maxWidth="200px"
+                            mx="auto"
+                            mt={4}
+                        >
+                            Start Comparison
+                        </Button>
                     </Box>
+                )}
+            </Fade>
 
-                    <Input
-                        placeholder="Enter prebuilt PC link"
-                        value={url}
-                        onChange={(e) => setURL(e.target.value)}
-                        isDisabled={loading}
-                        size="lg"
-                        maxWidth="500px"
-                        mx="auto"
-                    />
-                    <Button
-                        colorScheme="blue"
-                        size={"lg"}
-                        onClick={handleStartComparison}
-                        isDisabled={!url.trim() || loading}
-                        maxWidth="200px"
-                        mx="auto"
+            <Fade in={loading}>
+                {loading && (
+                    <Box
+                        display="flex"
+                        flexDirection="column"
+                        justifyContent="center"
+                        alignItems="center"
+                        height="100vh" 
+                        width="100vw"  
+                        position="fixed" 
+                        top="0" 
+                        left="0" 
+                        backgroundColor="rgba(255, 255, 255, 0.8)" 
+                        zIndex="1000" 
                     >
-                        Start Comparison
-                    </Button>
-                </>
-            )}
-
-            {loading && (
-                <Box display="flex" justifyContent="center" alignItems="center" height="200px">
-                    <Spinner size="lg" color="teal.500" label="Please wait, generating the result..." />
-                </Box>
-            )}
+                        <Text fontSize="lg" mb={4}>
+                            Collecting components... Please wait for around 1 minute.
+                        </Text>
+                        <Spinner size="xl" color="teal.500" label="Please wait, generating the result..." thickness="4px" />
+                    </Box>
+                )}
+            </Fade>
 
             {comparisonData && (
                 <HStack align="start" spacing={8} mt={10} w="100%" alignItems="flex-start">
