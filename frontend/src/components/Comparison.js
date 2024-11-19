@@ -69,7 +69,7 @@ const Comparison = () => {
                     <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
                         <Text fontSize="lg" fontWeight="medium">
                             Welcome to FindThatPC.AI! This tool allows you to compare the price of a prebuilt PC with the cost of building it yourself.
-                            Simply enter a link to a prebuilt PC from Micro Center or Canada Computers, and we’ll break down the prices for each individual component from Best Buy.
+                            Simply enter a link to a prebuilt PC from Micro Center or Canada Computers, and we’ll break down the prices for each individual component.
                             Our app helps you decide if buying a prebuilt is worth it or if building from parts is a more budget-friendly option.
                         </Text>
                         <Text fontSize="lg" mt={2}>
