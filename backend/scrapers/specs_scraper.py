@@ -99,7 +99,7 @@ def extract_relevant_html(html_content):
     price_patterns = [
         {'site': 'bestbuy', 'class': ['priceView-customer-price', 'pricing-price__regular-price']},
         {'site': 'canadacomputers', 'class': ['pq-hdr-price', 'price']},
-        {'site': 'microcenter', 'class': ['price', 'price__regular']}
+        {'site': 'microcenter', 'class': ['big-price', 'price__regular']}
     ]
     
     prebuilt_price = None
@@ -108,16 +108,34 @@ def extract_relevant_html(html_content):
     for pattern in price_patterns:
         for price_class in pattern['class']:
             price_element = soup.find('li', class_=price_class) or soup.find('div', class_=price_class) or soup.find('span', class_=price_class)
-            
+
             if price_element:
-                price_text = price_element.get_text(strip=True).replace("CAD", "").replace("$", "").replace(",", "").strip()
-                
-                try:
-                    prebuilt_price = float(price_text)
-                    if prebuilt_price:
-                        return prebuilt_price, cleaned_specs_html
-                except ValueError:
-                    continue
+                # Special handling for Micro Center's price structure
+                if 'microcenter' in pattern['site']:
+                    price_container = soup.find('p', class_=price_class)
+                    if price_container:
+                        dollar_element = price_container.find('span', id='pricing')
+                        cent_element = price_container.find('sup', class_='cent2022')
+
+                        if dollar_element and cent_element:
+                            try:
+                                dollar = dollar_element.get_text(strip=True)
+                                cents = cent_element.get_text(strip=True)
+                                price_text = f"{dollar}.{cents}"
+                                prebuilt_price = float(price_text)
+                                if prebuilt_price:
+                                    return prebuilt_price, cleaned_specs_html
+                            except ValueError:
+                                continue
+                else:
+                    # Default handling for other sites
+                    price_text = price_element.get_text(strip=True).replace("CAD", "").replace("$", "").replace(",", "").strip()
+                    try:
+                        prebuilt_price = float(price_text)
+                        if prebuilt_price:
+                            return prebuilt_price, cleaned_specs_html
+                    except ValueError:
+                        continue
 
     if not prebuilt_price:
         possible_price_elements = soup.find_all(text=lambda text: "CAD $" in text or "$" in text)

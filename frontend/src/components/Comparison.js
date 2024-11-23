@@ -62,8 +62,27 @@ const Comparison = () => {
         }
     }, [comparisonData]);
 
+    useEffect(() => {
+        try {
+            (window.adsbygoogle = window.adsbygoogle || []).push({});
+        } catch (e) {
+            console.error('Adsbygoogle error:', e);
+        }
+    }, []);
+
     return (
         <VStack spacing={6} mt={10} align="stretch" maxWidth="1200px" mx="auto">
+            <Box w="100%" textAlign="center" mb={4}>
+                <ins
+                    className="adsbygoogle"
+                    style={{ display: 'block' }}
+                    data-ad-client="ca-pub-1282335330087977"
+                    data-ad-slot="3400438007"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"
+                ></ins>
+            </Box>
+
             <Fade in={!loading}>
                 {!comparisonData && (
                     <Box textAlign="center" maxWidth="600px" mx="auto" mb={4}>
@@ -123,7 +142,7 @@ const Comparison = () => {
                         zIndex="1000" 
                     >
                         <Text fontSize="lg" mb={4}>
-                            Collecting components... Please wait for around 1 minute.
+                            Collecting components... Please wait
                         </Text>
                         <Spinner size="xl" color="teal.500" label="Please wait, generating the result..." thickness="4px" />
                     </Box>
@@ -175,6 +194,17 @@ const Comparison = () => {
                     <Components parts={comparisonData.parts} visibleParts={visibleParts} />
                 </HStack>
             )}
+
+            <Box w="100%" textAlign="center" mt={4}>
+                <ins
+                    className="adsbygoogle"
+                    style={{ display: 'block' }}
+                    data-ad-client="ca-pub-1282335330087977"
+                    data-ad-slot="6433624018"
+                    data-ad-format="auto"
+                    data-full-width-responsive="true"
+                ></ins>
+            </Box>
         </VStack>
     );
 };
