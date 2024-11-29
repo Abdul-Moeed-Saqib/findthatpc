@@ -16,11 +16,11 @@ def get_currency_by_country(country_code):
 
 def get_user_country():
     try:
-        geo_api_url = "http://ip-api.com/json/"
+        geo_api_url = "https://get.geojs.io/v1/ip/geo.json"
         response = requests.get(geo_api_url)
         response.raise_for_status()
         user_data = response.json()
-        country_code = user_data.get("countryCode", "US")
+        country_code = user_data.get("country_code", "US")
         currency = get_currency_by_country(country_code)
         return country_code, currency
     except Exception as e:
