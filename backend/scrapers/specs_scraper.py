@@ -78,7 +78,10 @@ def extract_relevant_html(html_content, hostname):
 
     user_country, user_currency = get_user_country()
 
+    print(f"{user_currency}")
+
     detected_currency = detect_currency_with_ai(hostname)
+    print(f"{detected_currency}")
 
     specs_section = None
     possible_sections = [
