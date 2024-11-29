@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
+import currencyCodes from 'currency-codes';
+import currencySymbolMap from 'currency-symbol-map';
 import {
     Box, Button, Input, Spinner, VStack, Text, HStack, Fade, useToast
 } from '@chakra-ui/react';
@@ -13,6 +15,7 @@ const Comparison = () => {
     const [comparisonData, setComparisonData] = useState(null);
     const [visibleParts, setVisibleParts] = useState([]);
     const [allComponentsDisplayed, setAllComponentsDisplayed] = useState(false);
+    const [currencySymbol, setCurrencySymbol] = useState("$");
 
     const handleStartComparison = async () => {
         setLoading(true);
@@ -61,6 +64,25 @@ const Comparison = () => {
             setURL("");
         }
     }, [comparisonData]);
+
+    useEffect(() => {
+        const getCurrencySymbol = async () => {
+            try {
+                const response = await axios.get('https://ipapi.co/json/');
+                const { country_name } = response.data;
+
+                const currency = currencyCodes.country(country_name);
+                const symbol = currencySymbolMap(currency ? currency[0].code : "USD")
+
+                setCurrencySymbol(symbol)
+            } catch (error) {
+                console.error("Failed to fetch user location or currency:", error);
+                return "USD"; 
+            }
+        }
+
+        getCurrencySymbol();
+    }, [])
 
     useEffect(() => {
         try {
@@ -163,16 +185,16 @@ const Comparison = () => {
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="blue.600">Prebuilt PC Information</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
-                                <Text fontSize="x-large"><strong>Price:</strong> ${comparisonData.prebuilt_price.toFixed(2)}</Text>
+                                <Text fontSize="x-large"><strong>Price:</strong> {currencySymbol}{comparisonData.prebuilt_price.toFixed(2)}</Text>
                              </Box>
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
-                                <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> ${comparisonData.total_parts_price.toFixed(2)}</Text>
+                                <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> {currencySymbol}{comparisonData.total_parts_price.toFixed(2)}</Text>
                                 <Text fontSize="x-large" color={comparisonData.price_difference < 0 ? 'red' : 'black'}>
                                     <strong>Difference:</strong> 
                                     {comparisonData.price_difference < 0 
-                                        ? ` -$${Math.abs(comparisonData.price_difference).toFixed(2)}`
-                                        : ` $${comparisonData.price_difference.toFixed(2)}`
+                                        ? ` -${currencySymbol}${Math.abs(comparisonData.price_difference).toFixed(2)}`
+                                        : ` ${currencySymbol}${comparisonData.price_difference.toFixed(2)}`
                                     }
                                 </Text>
                             </Box>
@@ -191,7 +213,7 @@ const Comparison = () => {
                     )}
                     </VStack>
                     
-                    <Components parts={comparisonData.parts} visibleParts={visibleParts} />
+                    <Components parts={comparisonData.parts} visibleParts={visibleParts} currencySymbol={currencySymbol} />
                 </HStack>
             )}
 

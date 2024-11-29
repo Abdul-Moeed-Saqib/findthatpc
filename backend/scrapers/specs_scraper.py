@@ -4,6 +4,7 @@ import os
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
+from scrapers.conversion import get_user_country, get_conversion_rate, detect_currency_with_ai
 
 load_dotenv()
 
@@ -72,10 +73,13 @@ def check_if_prebuilt_pc(html_content):
         return False
 
 # This function gets the relevvant content of the page and the price of the prebuilt pc
-def extract_relevant_html(html_content):
+def extract_relevant_html(html_content, hostname):
     soup = BeautifulSoup(html_content, 'html.parser')
 
-    # Specs section lookup
+    user_country, user_currency = get_user_country()
+
+    detected_currency = detect_currency_with_ai(hostname)
+
     specs_section = None
     possible_sections = [
         'spec', 'details', 'SpecTable', 'specs', 'product-description', 
@@ -109,33 +113,27 @@ def extract_relevant_html(html_content):
         for price_class in pattern['class']:
             price_element = soup.find('li', class_=price_class) or soup.find('div', class_=price_class) or soup.find('span', class_=price_class)
 
-            if price_element:
-                # Special handling for Micro Center's price structure
-                if 'microcenter' in pattern['site']:
+            if price_element and 'microcenter' not in hostname:
+                price_text = price_element.get_text(strip=True).replace("CAD", "").replace("$", "").replace(",", "").strip()
+                try:
+                    prebuilt_price = float(price_text)
+                    break
+                except ValueError:
+                    continue
+
+            if 'microcenter' in pattern['site']:
                     price_container = soup.find('p', class_=price_class)
                     if price_container:
                         dollar_element = price_container.find('span', id='pricing')
-                        cent_element = price_container.find('sup', class_='cent2022')
 
-                        if dollar_element and cent_element:
+                        if dollar_element:
                             try:
-                                dollar = dollar_element.get_text(strip=True)
-                                cents = cent_element.get_text(strip=True)
-                                price_text = f"{dollar}.{cents}"
+                                dollar = dollar_element.get("content")
+                                price_text = dollar.replace(',', '')
                                 prebuilt_price = float(price_text)
-                                if prebuilt_price:
-                                    return prebuilt_price, cleaned_specs_html
+                                break
                             except ValueError:
                                 continue
-                else:
-                    # Default handling for other sites
-                    price_text = price_element.get_text(strip=True).replace("CAD", "").replace("$", "").replace(",", "").strip()
-                    try:
-                        prebuilt_price = float(price_text)
-                        if prebuilt_price:
-                            return prebuilt_price, cleaned_specs_html
-                    except ValueError:
-                        continue
 
     if not prebuilt_price:
         possible_price_elements = soup.find_all(text=lambda text: "CAD $" in text or "$" in text)
@@ -149,9 +147,13 @@ def extract_relevant_html(html_content):
             except ValueError:
                 continue
 
+    if detected_currency != user_currency and prebuilt_price:
+        conversion_rate = get_conversion_rate(detected_currency, user_currency)
+        prebuilt_price *= conversion_rate
+        
     return prebuilt_price, cleaned_specs_html
 
-# This function requests to an AI from GroqCloud to find the parts of the prebuilt pc
+# This function requests to an AI from OpenAI to find the parts of the prebuilt pc
 def scrape_specs_from_html(cleaned_html_content):
     openai_api_key = os.getenv('OPENAI_API_KEY')
     headers = {
@@ -225,7 +227,7 @@ def search_part_price(part_name, component_type=None):
         "Motherboard": "N=4294966996",
         "RAM": "N=4294966965",
         "Storage": "N=4294822457+4294966998",
-        "Cooling": "N=4294822457+4294966998+4294819366",
+        "Cooling": "N=4294819366",
         "Power Supply": "N=4294822457+4294966998",
         "Case": "N=4294964318",
     }
@@ -233,32 +235,45 @@ def search_part_price(part_name, component_type=None):
     category_filter = component_category.get(part_name, "")
     search_url = f"{base_url}{category_filter}&Ntt={component_type.replace(' ', '+')}&searchButton=search"
 
-    headers = {
-        'User-Agent': ua.random
-    }
+    headers = {'User-Agent': ua.random}
 
     try:
         response = requests.get(search_url, headers=headers)
         if response.status_code == 200:
             soup = BeautifulSoup(response.content, 'html.parser')
-            part_features = extract_features(part_name)
+            part_features = extract_features(component_type)
             products = soup.find_all('li', class_='product_wrapper')
+
+            user_country, user_currency = get_user_country()
 
             for product in products:
                 product_title_element = product.find('a', class_='productClickItemV2')
                 if product_title_element:
                     product_title = product_title_element['data-name'].lower()
 
-                    # verification
                     matches = sum(feature in product_title for feature in part_features)
-                    if matches >= len(part_features) // 2:
-                        if verify_part_match(part_name, product_title, component_type):
-                            price_element = product.find('span', itemprop='price')
-                            if price_element:
-                                price_text = price_element.text.strip()
+                    if matches < len(part_features) * 0.75:
+                        continue
+
+                    if verify_part_match(part_name, product_title, component_type):
+                        price_element = product.find('span', itemprop='price')
+                        if price_element:
+                            price_text = price_element.text.strip()
+
+                            try: 
+                                price_value = float(re.sub(r'[^\d.]', '', price_text))
+
+                                if user_currency != "USD":
+                                    conversion_rate = get_conversion_rate("USD", user_currency)
+                                    price_value *= conversion_rate
+
                                 product_link = "https://www.microcenter.com" + product_title_element['href']
-                                return price_text, product_link
-            print(f"No close match found for part: {part_name}")
+                                return price_value, product_link
+                            except ValueError:
+                                print(f"Invalid price format: {price_text}")
+                                continue
+                                
+            print(f"No valid match found for part: {part_name}")
             return None, None
         else:
             print(f"Failed to fetch page for {part_name}. Status code: {response.status_code}")
@@ -278,22 +293,28 @@ def verify_part_match(part_name, product_title, component_type=None):
     data = {
         "model": "gpt-4o-mini",
         "messages": [
-            {"role": "system", "content": "You accurately classify components as standalone or prebuilt systems."},
+            {"role": "system", "content": (
+                "You are a component verification AI. Your role is to determine if a product is a standalone component, "
+                "not a PC, laptop, gaming desktop, or system."
+            )},
             {"role": "user", "content": (
-                f"Does '{product_title}' accurately describe a standalone '{component_type or part_name}' "
-                "and NOT a prebuilt PC, Gaming Desktop, Laptop, System, or unrelated item? Respond 'yes' only if it is definitely a standalone component, "
-                "not a system, prebuilt, or anything unrelated to standalone parts. Reply 'no' otherwise."
+                f"Does '{product_title}' accurately describe a standalone '{component_type or part_name}'? "
+                "Do not consider anything that mentions PC, system, desktop, or laptop. "
+                "Only respond 'yes' if it is a guaranteed standalone component, and 'no' otherwise."
             )}
         ]
     }
     
-    response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
-    
-    if response.status_code == 200:
-        ai_response = response.json()['choices'][0]['message']['content']
-        return "yes" in ai_response.lower()
-    else:
-        print("Error verifying part match with OpenAI.")
+    try:
+        response = requests.post('https://api.openai.com/v1/chat/completions', headers=headers, json=data)
+        if response.status_code == 200:
+            ai_response = response.json()['choices'][0]['message']['content'].strip().lower()
+            return "yes" in ai_response
+        else:
+            print(f"AI verification failed: {response.status_code} - {response.text}")
+            return False
+    except Exception as e:
+        print(f"Error verifying part match with OpenAI: {e}")
         return False
     
 
@@ -316,7 +337,7 @@ def parse_parts_and_prices(ai_output):
                     parts.append({
                         'name': name,
                         'type': part_type,
-                        'price': float(re.sub(r'[^\d.]', '', price)),
+                        'price': price,
                         'link': link
                     })
             except ValueError:
