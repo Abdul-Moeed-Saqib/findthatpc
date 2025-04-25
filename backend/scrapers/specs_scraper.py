@@ -4,7 +4,7 @@ import os
 from fake_useragent import UserAgent
 from bs4 import BeautifulSoup
 from dotenv import load_dotenv
-from scrapers.conversion import get_user_country, get_conversion_rate, detect_currency_with_ai
+from urllib.parse import quote
 
 load_dotenv()
 
@@ -73,15 +73,8 @@ def check_if_prebuilt_pc(html_content):
         return False
 
 # This function gets the relevvant content of the page and the price of the prebuilt pc
-def extract_relevant_html(html_content, hostname):
+def extract_relevant_html(html_content):
     soup = BeautifulSoup(html_content, 'html.parser')
-
-    user_country, user_currency = get_user_country()
-
-    print(f"{user_currency}")
-
-    detected_currency = detect_currency_with_ai(hostname)
-    print(f"{detected_currency}")
 
     specs_section = None
     possible_sections = [
@@ -116,7 +109,7 @@ def extract_relevant_html(html_content, hostname):
         for price_class in pattern['class']:
             price_element = soup.find('li', class_=price_class) or soup.find('div', class_=price_class) or soup.find('span', class_=price_class)
 
-            if price_element and 'microcenter' not in hostname:
+            if price_element:
                 price_text = price_element.get_text(strip=True).replace("CAD", "").replace("$", "").replace(",", "").strip()
                 try:
                     prebuilt_price = float(price_text)
@@ -149,10 +142,6 @@ def extract_relevant_html(html_content, hostname):
                     break
             except ValueError:
                 continue
-
-    if detected_currency != user_currency and prebuilt_price:
-        conversion_rate = get_conversion_rate(detected_currency, user_currency)
-        prebuilt_price *= conversion_rate
         
     return prebuilt_price, cleaned_specs_html
 
@@ -221,6 +210,7 @@ def extract_features(part_name):
 
     return features
 
+
 # This function searches prices of the parts using web scraping
 def search_part_price(part_name, component_type=None):
     base_url = "https://www.microcenter.com/search/search_results.aspx?"
@@ -247,8 +237,6 @@ def search_part_price(part_name, component_type=None):
             part_features = extract_features(component_type)
             products = soup.find_all('li', class_='product_wrapper')
 
-            user_country, user_currency = get_user_country()
-
             for product in products:
                 product_title_element = product.find('a', class_='productClickItemV2')
                 if product_title_element:
@@ -266,10 +254,6 @@ def search_part_price(part_name, component_type=None):
                             try: 
                                 price_value = float(re.sub(r'[^\d.]', '', price_text))
 
-                                if user_currency != "USD":
-                                    conversion_rate = get_conversion_rate("USD", user_currency)
-                                    price_value *= conversion_rate
-
                                 product_link = "https://www.microcenter.com" + product_title_element['href']
                                 return price_value, product_link
                             except ValueError:
@@ -284,6 +268,7 @@ def search_part_price(part_name, component_type=None):
     except Exception as e:
         print(f"Error fetching part price: {e}")
         return None, None
+
 
 # This function verify if product matches with the component using AI
 def verify_part_match(part_name, product_title, component_type=None):

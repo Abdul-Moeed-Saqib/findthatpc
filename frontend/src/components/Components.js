@@ -1,7 +1,7 @@
 import React from 'react';
 import { Box, Text, Grid, ScaleFade, Button, Link as ChakraLink } from '@chakra-ui/react';
 
-const Components = ({ parts, visibleParts, currencySymbol}) => {
+const Components = ({ parts, visibleParts, displayCurrency}) => {
     return (
         <Box w="100%" pl="350px">
             <Box w="135%" textAlign="center" mb={6}>
@@ -27,7 +27,7 @@ const Components = ({ parts, visibleParts, currencySymbol}) => {
                             <Box>
                                 <Text fontSize="xl" fontWeight="semibold" color="teal.600">{part.name}</Text>
                                 <Text><strong>Type:</strong> {part.type}</Text>
-                                <Text><strong>Price:</strong> {currencySymbol}{part.price.toFixed(2)}</Text>
+                                <Text><strong>Price:</strong> {displayCurrency}{' '}{part.price.toFixed(2)}</Text>
                             </Box>
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button as={ChakraLink} href={part.link} target="_blank" colorScheme="blue">

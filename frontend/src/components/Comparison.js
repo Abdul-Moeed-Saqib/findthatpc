@@ -1,9 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import axios from 'axios';
-import currencyCodes from 'currency-codes';
-import currencySymbolMap from 'currency-symbol-map';
 import {
-    Box, Button, Input, Spinner, VStack, Text, HStack, Fade, useToast
+    Box, Button, Input, Spinner, VStack, Text, HStack, Fade, useToast, Select
 } from '@chakra-ui/react';
 import Components from './Components';
 
@@ -15,13 +13,51 @@ const Comparison = () => {
     const [comparisonData, setComparisonData] = useState(null);
     const [visibleParts, setVisibleParts] = useState([]);
     const [allComponentsDisplayed, setAllComponentsDisplayed] = useState(false);
-    const [currencySymbol, setCurrencySymbol] = useState("$");
+    const [baseCurrency, setBaseCurrency] = useState('USD');
+    const [displayCurrency, setDisplayCurrency] = useState('USD');
+    const [exchangeRates, setExchangeRates] = useState({});
+    const supportedCurrencies = ['USD', 'CAD', 'EUR', 'CNY'];
+
+    const fetchExchangeRates = async (base) => {
+        try {
+          const { data } = await axios.get(
+            `https://api.exchangerate-api.com/v4/latest/${base}`
+          );
+          setExchangeRates(data.rates);
+        } catch (err) {
+          console.error('Rate fetch failed', err);
+          toast({
+            title: 'Currency Error',
+            description: 'Could not load exchange rates.',
+            status: 'error',
+            duration: 4000,
+            isClosable: true,
+          });
+        }
+      };
+
+      const convertCurrency = (amount) => {
+        if (
+          displayCurrency === baseCurrency ||
+          !exchangeRates[displayCurrency]
+        ) {
+          return amount;
+        }
+        return amount * exchangeRates[displayCurrency];
+      };
 
     const handleStartComparison = async () => {
         setLoading(true);
         setComparisonData(null);
         setVisibleParts([]);
         setAllComponentsDisplayed(false);
+
+        const detected = url.includes('canadacomputers.com') ? 'CAD' : 'USD';
+        setBaseCurrency(detected);
+        setDisplayCurrency(detected);
+
+        await fetchExchangeRates(detected);
+
         try {
             const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/scrape`, 
                 { 
@@ -66,31 +102,34 @@ const Comparison = () => {
     }, [comparisonData]);
 
     useEffect(() => {
-        const getCurrencySymbol = async () => {
-            try {
-                const response = await axios.get('https://ipapi.co/json/');
-                const { country_name } = response.data;
-
-                const currency = currencyCodes.country(country_name);
-                const symbol = currencySymbolMap(currency ? currency[0].code : "USD")
-
-                setCurrencySymbol(symbol)
-            } catch (error) {
-                console.error("Failed to fetch user location or currency:", error);
-                return "USD"; 
-            }
-        }
-
-        getCurrencySymbol();
-    }, [])
-
-    useEffect(() => {
         try {
             (window.adsbygoogle = window.adsbygoogle || []).push({});
         } catch (e) {
             console.error('Adsbygoogle error:', e);
         }
     }, []);
+
+    let convertedPrebuilt = 0;
+    let convertedTotalParts = 0;
+    let convertedDiff = 0;
+    let partsForDisplay = [];
+
+    if (comparisonData) {
+        convertedPrebuilt = convertCurrency(
+        comparisonData.prebuilt_price
+        );
+        convertedTotalParts = convertCurrency(
+        comparisonData.total_parts_price
+        );
+        convertedDiff = convertCurrency(
+        comparisonData.price_difference
+        );
+        partsForDisplay = comparisonData.parts.map((p) => ({
+        ...p,
+        price: convertCurrency(p.price),
+        }));
+    }
+
 
     return (
         <VStack spacing={6} mt={10} align="stretch" maxWidth="1200px" mx="auto">
@@ -185,16 +224,17 @@ const Comparison = () => {
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="blue.600">Prebuilt PC Information</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
-                                <Text fontSize="x-large"><strong>Price:</strong> {currencySymbol}{comparisonData.prebuilt_price.toFixed(2)}</Text>
+                                <Text fontSize="x-large"><strong>Price:</strong> {displayCurrency}{' '}{convertedPrebuilt.toFixed(2)}</Text>
                              </Box>
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
-                                <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> {currencySymbol}{comparisonData.total_parts_price.toFixed(2)}</Text>
+                                <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> {' '}
+                                {displayCurrency}{' '}{convertedTotalParts.toFixed(2)}</Text>
                                 <Text fontSize="x-large" color={comparisonData.price_difference < 0 ? 'red' : 'black'}>
                                     <strong>Difference:</strong> 
                                     {comparisonData.price_difference < 0 
-                                        ? ` -${currencySymbol}${Math.abs(comparisonData.price_difference).toFixed(2)}`
-                                        : ` ${currencySymbol}${comparisonData.price_difference.toFixed(2)}`
+                                        ? ` -${displayCurrency} ${Math.abs(convertedDiff).toFixed(2)}`
+                                        : ` ${displayCurrency} ${convertedDiff.toFixed(2)}`
                                     }
                                 </Text>
                             </Box>
@@ -211,9 +251,25 @@ const Comparison = () => {
                             </Box>
                         </Fade>
                     )}
+
+                        <Box position="absolute" top="0" left="1700">
+                            <Select
+                                value={displayCurrency}
+                                onChange={(e) =>
+                                setDisplayCurrency(e.target.value)
+                                }
+                                w="100px"
+                            >
+                                {supportedCurrencies.map((cur) => (
+                                <option key={cur} value={cur}>
+                                    {cur}
+                                </option>
+                                ))}
+                            </Select>
+                        </Box>
                     </VStack>
                     
-                    <Components parts={comparisonData.parts} visibleParts={visibleParts} currencySymbol={currencySymbol} />
+                    <Components parts={partsForDisplay} visibleParts={visibleParts} displayCurrency={displayCurrency} />
                 </HStack>
             )}
 

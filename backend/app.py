@@ -3,7 +3,6 @@ from flask_cors import CORS
 from scrapers.specs_scraper import get_html_content, extract_relevant_html, scrape_specs_from_html, parse_parts_and_prices
 from models.database import insert_comparison
 from dotenv import load_dotenv
-from urllib.parse import urlparse
 import os
 
 load_dotenv()
@@ -41,11 +40,8 @@ def scrape():
         html_content, error = get_html_content(url)
         if error:
             return jsonify({"error": error}), 400
-        
-        parsed_url = urlparse(url)
-        hostname = parsed_url.netloc.split('.')[1]
 
-        prebuilt_price, cleaned_html_content = extract_relevant_html(html_content, hostname)
+        prebuilt_price, cleaned_html_content = extract_relevant_html(html_content)
 
         parts_text = scrape_specs_from_html(cleaned_html_content)
         if not parts_text:
