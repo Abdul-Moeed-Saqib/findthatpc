@@ -50,7 +50,7 @@ function About() {
           What It Does
         </Heading>
         <Text fontSize="md" color="gray.600">
-          My platform analyzes prebuilt PCs from top retailers and breaks them
+          The platform analyzes prebuilt PCs from top retailers and breaks them
           down into their individual components — CPUs, GPUs, storage, memory,
           cooling, and more. Then fetch the current best prices for each part,
           so you can see if the prebuilt PC is fairly priced or if building
@@ -70,7 +70,7 @@ function About() {
             Microcenter or CanadaComputers).
           </Text>
           <Text fontSize="md" color="gray.600">
-            2. Our AI breaks down the build, finds the individual parts, and
+            2. The AI breaks down the build, finds the individual parts, and
             fetches their prices.
           </Text>
           <Text fontSize="md" color="gray.600">
