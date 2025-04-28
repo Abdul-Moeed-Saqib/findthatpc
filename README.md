@@ -1,6 +1,8 @@
 # FindThatPC.AI
 
-![Image](https://github.com/user-attachments/assets/f45b67d4-366c-43aa-9173-d4d7daee831d)
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/f45b67d4-366c-43aa-9173-d4d7daee831d" alt="Image" />
+</p>
 
 **Version: 1.0**
 
@@ -51,12 +53,12 @@ FindThatPC.AI provides an innovative way to compare the cost of prebuilt PCs aga
 
 ### Input Page
 
-![Input Page Screenshot](https://cdn.discordapp.com/attachments/602366822737772556/1305751096098291812/image.png?ex=67342af8&is=6732d978&hm=4668306002ad6670a2db8b17e375366bad0bbc9ff8bf1ae2564b497a66fe3114&)
+![Image](https://github.com/user-attachments/assets/c2e4906d-3cbe-40dd-8628-f00cef9dd2b6)
 *Enter your prebuilt PC link here.*
 
 ### Results Page
 
-![Results Page Screenshot](https://cdn.discordapp.com/attachments/602366822737772556/1305751021351473213/image.png?ex=67342ae7&is=6732d967&hm=ec1674a22fb9591d34fb0a147ee32384dda552e63d973ff25fa02a7ef8cad734&)
+![Image](https://github.com/user-attachments/assets/7d708b0b-ef33-4f77-9e3c-a6a3db69152c)
 *Detailed breakdown of prebuilt information and component prices.*
 
 ---
