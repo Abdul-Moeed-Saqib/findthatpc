@@ -1,6 +1,6 @@
 # FindThatPC.AI
 
-![Project Logo or Banner](https://cdn.discordapp.com/attachments/602366822737772556/1305751288402673774/chip.png?ex=67342b26&is=6732d9a6&hm=c451417f2c5ce4853dc2e813c447fb91232eb9088145acc1ab944f3e78cd465a&)
+![Image](https://github.com/user-attachments/assets/f45b67d4-366c-43aa-9173-d4d7daee831d)
 
 **Version: 1.0**
 
