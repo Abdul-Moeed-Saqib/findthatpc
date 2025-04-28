@@ -3,6 +3,7 @@ import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Container, Box } from '@chakra-ui/react';
 import Home from './components/Home';
 import Comparison from './components/Comparison';
+import About from './components/About'; 
 import Header from './components/Header';
 import Footer from './components/Footer';
 import ErrorPage from './ErrorPage';
@@ -16,6 +17,7 @@ function App() {
                     <Routes>
                         <Route path="/" element={<Home />} />
                         <Route path="/comparison" element={<Comparison />} />
+                        <Route path="/about" element={<About />} />
                         <Route path="*" element={<ErrorPage />} />  
                     </Routes>
                 </Box>
