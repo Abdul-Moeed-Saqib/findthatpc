@@ -27,7 +27,7 @@ const Components = ({ parts, visibleParts, displayCurrency}) => {
                             <Box>
                                 <Text fontSize="xl" fontWeight="semibold" color="teal.600">{part.name}</Text>
                                 <Text><strong>Type:</strong> {part.type}</Text>
-                                <Text><strong>Price:</strong> {displayCurrency}{' '}{part.price.toFixed(2)}</Text>
+                                <Text><strong>Price:</strong> {displayCurrency}{part.price.toFixed(2)}</Text>
                             </Box>
                             <Box display="flex" justifyContent="center" mt={4}>
                                 <Button as={ChakraLink} href={part.link} target="_blank" colorScheme="blue">

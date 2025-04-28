@@ -13,38 +13,37 @@ const Comparison = () => {
     const [comparisonData, setComparisonData] = useState(null);
     const [visibleParts, setVisibleParts] = useState([]);
     const [allComponentsDisplayed, setAllComponentsDisplayed] = useState(false);
-    const [baseCurrency, setBaseCurrency] = useState('USD');
     const [displayCurrency, setDisplayCurrency] = useState('USD');
     const [exchangeRates, setExchangeRates] = useState({});
+
     const supportedCurrencies = ['USD', 'CAD', 'EUR', 'CNY'];
 
-    const fetchExchangeRates = async (base) => {
-        try {
-          const { data } = await axios.get(
-            `https://api.exchangerate-api.com/v4/latest/${base}`
-          );
-          setExchangeRates(data.rates);
-        } catch (err) {
-          console.error('Rate fetch failed', err);
-          toast({
-            title: 'Currency Error',
-            description: 'Could not load exchange rates.',
-            status: 'error',
-            duration: 4000,
-            isClosable: true,
-          });
-        }
-      };
+    useEffect(() => {
+    const fetchRates = async () => {
+      try {
+        const { data } = await axios.get(
+          `https://api.exchangerate-api.com/v4/latest/USD`
+        );
+        setExchangeRates(data.rates);
+      } catch (err) {
+        toast({
+          title: 'Currency Error',
+          description: 'Could not load exchange rates.',
+          status: 'error',
+          duration: 4000,
+          isClosable: true,
+        });
+      }
+    };
+    fetchRates();
+  }, [toast]);
 
-      const convertCurrency = (amount) => {
-        if (
-          displayCurrency === baseCurrency ||
-          !exchangeRates[displayCurrency]
-        ) {
-          return amount;
+    const convertCurrency = (usdAmount) => {
+        if (displayCurrency === 'USD' || !exchangeRates[displayCurrency]) {
+        return usdAmount;
         }
-        return amount * exchangeRates[displayCurrency];
-      };
+        return usdAmount * exchangeRates[displayCurrency];
+    };
 
     const handleStartComparison = async () => {
         setLoading(true);
@@ -53,53 +52,40 @@ const Comparison = () => {
         setAllComponentsDisplayed(false);
 
         const detected = url.includes('canadacomputers.com') ? 'CAD' : 'USD';
-        setBaseCurrency(detected);
         setDisplayCurrency(detected);
 
-        await fetchExchangeRates(detected);
-
         try {
-            const response = await axios.post(`${process.env.REACT_APP_BACKEND_URL}/api/scrape`, 
-                { 
-                    url: url.trim()
-                }, {
-                    headers: {
-                        'Content-Type': 'application/json',
-                        'Accept': 'application/json',
-                    },
-                    withCredentials: true,
-                });
-            setComparisonData(response.data);
-        } catch (error) {
-            console.error("Error fetching data:", error);
+            const { data } = await axios.post(
+              `${process.env.REACT_APP_BACKEND_URL}/api/scrape`,
+              { url: url.trim() },
+              { headers: { 'Content-Type': 'application/json' }, withCredentials: true }
+            );
+            setComparisonData(data);
+          } catch (err) {
             toast({
-                title: "Error",
-                description: error.response?.data?.error || "An unexpected error occurred.",
-                status: "error",
-                duration: 5000,
-                isClosable: true,
+              title: 'Error',
+              description: err.response?.data?.error || 'Something went wrong.',
+              status: 'error',
+              duration: 5000,
+              isClosable: true,
             });
-        } finally {
+          } finally {
             setLoading(false);
-        }
+          }
     };
 
     useEffect(() => {
-        if (comparisonData) {
-            const displayComponents = async () => {
-                comparisonData.parts.forEach((_, index) => {
-                    setTimeout(() => {
-                        setVisibleParts(prev => [...prev, index]);
-                        if (index === comparisonData.parts.length - 1) {
-                            setAllComponentsDisplayed(true);
-                        }
-                    }, index * 200);
-                });
-            };
-            displayComponents();
-            setURL("");
-        }
-    }, [comparisonData]);
+        if (!comparisonData) return;
+        comparisonData.parts.forEach((_, i) =>
+          setTimeout(() => {
+            setVisibleParts((v) => [...v, i]);
+            if (i === comparisonData.parts.length - 1) {
+              setAllComponentsDisplayed(true);
+            }
+          }, i * 200)
+        );
+        setURL('');
+      }, [comparisonData]);
 
     useEffect(() => {
         try {
@@ -109,27 +95,23 @@ const Comparison = () => {
         }
     }, []);
 
-    let convertedPrebuilt = 0;
-    let convertedTotalParts = 0;
-    let convertedDiff = 0;
-    let partsForDisplay = [];
+    let convertedPrebuilt = 0,
+    convertedTotalParts = 0,
+    convertedDiff = 0,
+    partsForDisplay = [];
 
-    if (comparisonData) {
-        convertedPrebuilt = convertCurrency(
-        comparisonData.prebuilt_price
-        );
-        convertedTotalParts = convertCurrency(
-        comparisonData.total_parts_price
-        );
-        convertedDiff = convertCurrency(
-        comparisonData.price_difference
-        );
+    if (comparisonData && exchangeRates) {
+        convertedPrebuilt = convertCurrency(comparisonData.prebuilt_price);
+        convertedTotalParts = convertCurrency(comparisonData.total_parts_price);
+        convertedDiff = convertCurrency(comparisonData.price_difference);
         partsForDisplay = comparisonData.parts.map((p) => ({
         ...p,
         price: convertCurrency(p.price),
         }));
     }
 
+    const symbols = { USD: '$', CAD: 'C$', EUR: '€', CNY: '¥' };
+    const sym = symbols[displayCurrency] || '';
 
     return (
         <VStack spacing={6} mt={10} align="stretch" maxWidth="1200px" mx="auto">
@@ -224,17 +206,17 @@ const Comparison = () => {
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="blue.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="blue.600">Prebuilt PC Information</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Name:</strong> {comparisonData.prebuilt_name}</Text>
-                                <Text fontSize="x-large"><strong>Price:</strong> {displayCurrency}{' '}{convertedPrebuilt.toFixed(2)}</Text>
+                                <Text fontSize="x-large"><strong>Price:</strong> {sym}{convertedPrebuilt.toFixed(2)}</Text>
                              </Box>
                             <Box p={6} mt={5} shadow="md" borderWidth="2px" borderRadius="lg" bg="green.50" w="110%">
                                 <Text fontSize="xx-large" fontWeight="bold" color="green.600">Price Difference</Text>
                                 <Text mt={4} fontSize="x-large"><strong>Total Parts Price:</strong> {' '}
-                                {displayCurrency}{' '}{convertedTotalParts.toFixed(2)}</Text>
+                                {sym}{convertedTotalParts.toFixed(2)}</Text>
                                 <Text fontSize="x-large" color={comparisonData.price_difference < 0 ? 'red' : 'black'}>
                                     <strong>Difference:</strong> 
                                     {comparisonData.price_difference < 0 
-                                        ? ` -${displayCurrency} ${Math.abs(convertedDiff).toFixed(2)}`
-                                        : ` ${displayCurrency} ${convertedDiff.toFixed(2)}`
+                                        ? ` -${sym}${Math.abs(convertedDiff).toFixed(2)}`
+                                        : ` ${sym}${convertedDiff.toFixed(2)}`
                                     }
                                 </Text>
                             </Box>
@@ -269,7 +251,7 @@ const Comparison = () => {
                         </Box>
                     </VStack>
                     
-                    <Components parts={partsForDisplay} visibleParts={visibleParts} displayCurrency={displayCurrency} />
+                    <Components parts={partsForDisplay} visibleParts={visibleParts} displayCurrency={sym} />
                 </HStack>
             )}
 
